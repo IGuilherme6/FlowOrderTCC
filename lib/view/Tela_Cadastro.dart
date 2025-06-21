@@ -1,95 +1,56 @@
+import 'package:floworder/controller/UsuarioController.dart';
+import 'package:floworder/models/Usuario.dart';
 import 'package:flutter/material.dart';
-import '../firebase/LoginFirebase.dart';
+import 'package:flutter/src/services/text_formatter.dart';
 
-class Tela_Login extends StatefulWidget {
+import '../auxiliar/Validador.dart';
+import '../auxiliar/Formatar.dart';
+
+class Tela_Cadastro extends StatefulWidget {
   @override
-  _telalogin createState() => _telalogin();
+  _TelaCadastro createState() => _TelaCadastro();
 }
 
-class _telalogin extends State<Tela_Login> {
+class _TelaCadastro extends State<Tela_Cadastro> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _cpfController = TextEditingController();
+
+  Usuario usuario = Usuario();
+  Validador validar = Validador();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _isCheckingAuth = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkAuthStatus();
-  }
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _cpfController.dispose();
     super.dispose();
   }
 
-  // Verifica se o usuário já está logado
-  Future<void> _checkAuthStatus() async {
-    try {
-      LoginFirebase loginFirebase = LoginFirebase();
 
-      if (loginFirebase.isLoggedIn()) {
-        Navigator.pushReplacementNamed(context, '/telacadastroUsuario');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Usuário já está logado'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-        Navigator.pushReplacementNamed(context, '/telacadastroUsuario');
-      }
-    } catch (e) {
-      print('Erro ao verificar status de autenticação: $e');
-    }
-
-    setState(() {
-      _isCheckingAuth = false;
-    });
-  }
-
-  Future<void> _login() async {
+  Future<void> _register() async {
     setState(() {
       _isLoading = true;
     });
 
-    try {
-      LoginFirebase loginFirebase = LoginFirebase();
-      String resultadoLogin = await loginFirebase.login(
-          _emailController.text,
-          _passwordController.text
-      );
 
-      if (resultadoLogin == 'success') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login realizado com sucesso!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-
-
-        Navigator.pushReplacementNamed(context, '/telaCadastroUsuario');
-
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(resultadoLogin),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro inesperado: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    UsuarioController usuarioController = UsuarioController();
+    String mensagem = await usuarioController.cadastrarUsuario(usuario);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(await mensagem),
+        backgroundColor: Colors.blue,
+      ),
+    );
+    if (mensagem == 'Usuário cadastrado com sucesso') {
+      Navigator.pushReplacementNamed(context, '/telaCadastroUsuario');//mudar depois
     }
 
     setState(() {
@@ -99,64 +60,6 @@ class _telalogin extends State<Tela_Login> {
 
   @override
   Widget build(BuildContext context) {
-    // Mostra loading inicial apenas por 1 segundo
-    if (_isCheckingAuth) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black,
-                Colors.grey[900]!,
-                Colors.black,
-              ],
-            ),
-          ),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.red[900],
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.red.withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Image.asset(
-                    'logo/Icone_FlowOrder.png',
-                    height: 100,
-                  ),
-                ),
-                SizedBox(height: 30),
-                CircularProgressIndicator(
-                  color: Colors.red[900],
-                  strokeWidth: 3,
-                ),
-                SizedBox(height: 20),
-                Text(
-                  'Carregando...',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: Container(
@@ -178,6 +81,7 @@ class _telalogin extends State<Tela_Login> {
               child: Container(
                 constraints: BoxConstraints(maxWidth: 400),
                 child: Form(
+                  key: _formKey,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -198,9 +102,12 @@ class _telalogin extends State<Tela_Login> {
                         child: Column(
                           children: [
                             Image.asset(
-                              'logo/Icone_FlowOrder.png',
+                              'logo/Icone_FlowOrder.png', // Caminho relativo à raiz onde o asset foi declarado
                               height: 100,
+                              // ...
                             ),
+
+
                           ],
                         ),
                       ),
@@ -208,7 +115,7 @@ class _telalogin extends State<Tela_Login> {
                       SizedBox(height: 40),
 
                       Text(
-                        'Login',
+                        'Criar Nova Conta',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 24,
@@ -219,7 +126,7 @@ class _telalogin extends State<Tela_Login> {
                       SizedBox(height: 8),
 
                       Text(
-                        'Login no FlowOrder',
+                        'Cadastrar Um Nova Conta de Um Gerente',
                         style: TextStyle(
                           color: Colors.white70,
                           fontSize: 16,
@@ -228,6 +135,21 @@ class _telalogin extends State<Tela_Login> {
 
                       SizedBox(height: 40),
 
+                      // Campo Nomes
+                      _buildInputField(
+                        controller: _nameController,
+                        label: 'Nome Completo',
+                        icon: Icons.person,
+                        validator: (value) {
+                          if (!validar.validarNome(value!)) {
+                            return 'Por favor, insira seu nome';
+                          }
+                          return null;
+                        }, inputFormatters: [],
+                      ),
+
+                      SizedBox(height: 20),
+
                       // Campo E-mail
                       _buildInputField(
                         controller: _emailController,
@@ -235,11 +157,25 @@ class _telalogin extends State<Tela_Login> {
                         icon: Icons.email,
                         keyboardType: TextInputType.emailAddress,
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor, insira seu e-mail';
+                          if (!validar.validarEmail(value!)) {
+                            return 'Email não esta Valido';
                           }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                            return 'E-mail inválido';
+                          return null;
+                        }, inputFormatters: [],
+                      ),
+
+                      SizedBox(height: 20),
+
+                      //campo cpf
+                      _buildInputField(
+                        controller: _cpfController,
+                        label: 'CPF',
+                        icon: Icons.badge,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [Formatar.cpf()],
+                        validator: (value) {
+                          if (!validar.validarCPF(value!)) {
+                            return 'CPF não esta Valido';
                           }
                           return null;
                         },
@@ -265,24 +201,32 @@ class _telalogin extends State<Tela_Login> {
                           },
                         ),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Por favor, insira uma senha';
-                          }
-                          if (value.length < 6) {
-                            return 'Senha deve ter pelo menos 6 caracteres';
+                          if (!validar.validarSenha(value!)) {
+                            return 'Por favor, insira uma senha, mínimo 6 caracteres';
                           }
                           return null;
-                        },
+                        }, inputFormatters: [],
                       ),
 
                       SizedBox(height: 20),
 
-                      // Botão Login
+
+
+                      // Botão Cadastrar
                       Container(
                         width: double.infinity,
                         height: 55,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _login,
+                          onPressed: _isLoading ? null : () {
+                            if (_formKey.currentState!.validate()) {
+                              usuario.nome = _nameController.text;
+                              usuario.email = _emailController.text;
+                              usuario.senha = _passwordController.text;
+                              usuario.cpf = _cpfController.text;
+                              usuario.tipo = ['Gerente'];
+                              _register();
+                            }
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red[900],
                             shape: RoundedRectangleBorder(
@@ -296,7 +240,7 @@ class _telalogin extends State<Tela_Login> {
                             strokeWidth: 2,
                           )
                               : Text(
-                            'Login',
+                            'CADASTRAR',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 18,
@@ -308,6 +252,30 @@ class _telalogin extends State<Tela_Login> {
                       ),
 
                       SizedBox(height: 30),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Já tem uma conta? ',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(context, '/telalogin');
+                            },
+                            child: Text(
+                              'Entrar',
+                              style: TextStyle(
+                                color: Colors.red[400],
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 20),
+
                     ],
                   ),
                 ),
@@ -326,7 +294,7 @@ class _telalogin extends State<Tela_Login> {
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
     Widget? suffixIcon,
-    String? Function(String?)? validator,
+    String? Function(String?)? validator, required List<TextInputFormatter> inputFormatters,
   }) {
     return Container(
       decoration: BoxDecoration(

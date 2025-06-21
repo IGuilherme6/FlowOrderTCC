@@ -1,3 +1,5 @@
+import 'package:floworder/view/Tela_Cadastro.dart';
+import 'package:floworder/view/Tela_CadastroUsuario.dart';
 import 'package:floworder/view/Tela_Login.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -19,9 +21,14 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.red,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: Tela_Login(),// Sua tela de registro
+      initialRoute: '/',
+      routes: {
+        '/': (context) => Tela_Cadastro(),
+        '/telalogin': (context) => Tela_Login(),
+        '/telaCadastroUsuario': (context) => TelaCadastroUsuario(),
+      },
       debugShowCheckedModeBanner: false,
     );
   }
-  
+
   }
