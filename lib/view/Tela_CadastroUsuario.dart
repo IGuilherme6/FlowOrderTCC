@@ -3,7 +3,7 @@ import 'package:floworder/controller/UsuarioController.dart';
 import 'package:floworder/models/Usuario.dart';
 import 'package:flutter/material.dart';
 import '../auxiliar/Validador.dart';
-import 'BarraLateral.dart'; // Sua barra lateral personalizada
+import 'BarraLateral.dart';
 
 class TelaCadastroUsuario extends StatefulWidget {
   @override
@@ -24,12 +24,6 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
 
   String? _selectedCargo;
   bool _isPasswordVisible = false;
-
-  List<Map<String, String>> _usuarios = [
-    {'nome': 'João Silva', 'cargo': 'Garçom'},
-    {'nome': 'Maria Souza', 'cargo': 'Caixa'},
-    {'nome': 'Pedro Lima', 'cargo': 'Cozinheiro'},
-  ];
 
   List<String> _cargos = ['Garçom', 'Atendente', 'Cozinheiro',];
 
@@ -65,14 +59,8 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
       backgroundColor: backgroundBlack,
       body: Row(
         children: [
-          // Barra lateral
           Barralateral(
             currentRoute: '/funcionarios',
-            onItemTapped: (route) {
-              if (route != '/funcionarios') {
-                Navigator.pushNamed(context, route);
-              }
-            },
           ),
           Expanded(
             child: SingleChildScrollView(
@@ -80,7 +68,6 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Cabeçalho
                   Text(
                     'Gestão de Funcionários',
                     style: TextStyle(
@@ -141,7 +128,6 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 🔥 Título
           Row(
             children: [
               Icon(Icons.list, color: primaryRed),
