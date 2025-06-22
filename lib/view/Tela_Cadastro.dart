@@ -42,7 +42,7 @@ class _TelaCadastro extends State<Tela_Cadastro> {
 
 
     UsuarioController usuarioController = UsuarioController();
-    String mensagem = await usuarioController.cadastrarUsuario(usuario);
+    String mensagem = await usuarioController.cadastrarGerente(usuario);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(await mensagem),
@@ -50,7 +50,7 @@ class _TelaCadastro extends State<Tela_Cadastro> {
       ),
     );
     if (mensagem == 'Usuário cadastrado com sucesso') {
-      Navigator.pushReplacementNamed(context, '/telaCadastroUsuario');//mudar depois
+      Navigator.pushReplacementNamed(context, '/funcionarios');//mudar depois
     }
 
     setState(() {
@@ -223,7 +223,7 @@ class _TelaCadastro extends State<Tela_Cadastro> {
                               usuario.email = _emailController.text;
                               usuario.senha = _passwordController.text;
                               usuario.cpf = _cpfController.text;
-                              usuario.tipo = ['Gerente'];
+                              usuario.cargo = 'Gerente';
                               _register();
                             }
                           },

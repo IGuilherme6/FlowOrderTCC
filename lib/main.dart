@@ -1,3 +1,9 @@
+import 'package:floworder/view/TelaCaixa.dart';
+import 'package:floworder/view/TelaCardapio.dart';
+import 'package:floworder/view/TelaDashboard.dart';
+import 'package:floworder/view/TelaDecisao.dart';
+import 'package:floworder/view/TelaPedidos.dart';
+import 'package:floworder/view/TelaRelatorios.dart';
 import 'package:floworder/view/Tela_Cadastro.dart';
 import 'package:floworder/view/Tela_CadastroUsuario.dart';
 import 'package:floworder/view/Tela_Login.dart';
@@ -9,13 +15,14 @@ void main() async{
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return MaterialApp(
       theme: ThemeData(
         primarySwatch: Colors.red,
@@ -23,9 +30,16 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/': (context) => Tela_Cadastro(),
+        '/': (context) => TelaDecisao(),
+        '/telaCadastro': (context) => Tela_Cadastro(),
         '/telalogin': (context) => Tela_Login(),
-        '/telaCadastroUsuario': (context) => TelaCadastroUsuario(),
+        '/funcionarios': (context) => TelaCadastroUsuario(),
+        '/dashboard': (context) => TelaDashboard(),
+        '/relatorios': (context) => TelaRelatorio(),
+        '/pedidos': (context) => TelaPedidos(),
+        '/caixa': (context) => TelaCaixa(),
+        '/cardapio': (context) => TelaCardapio(),
+
       },
       debugShowCheckedModeBanner: false,
     );

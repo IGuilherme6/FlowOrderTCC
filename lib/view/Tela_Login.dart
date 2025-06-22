@@ -33,7 +33,7 @@ class _telalogin extends State<Tela_Login> {
       LoginFirebase loginFirebase = LoginFirebase();
 
       if (loginFirebase.isLoggedIn()) {
-        Navigator.pushReplacementNamed(context, '/telacadastroUsuario');
+        Navigator.pushReplacementNamed(context, '/funcionarios');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Usuário já está logado'),
@@ -41,10 +41,11 @@ class _telalogin extends State<Tela_Login> {
           ),
         );
 
-        Navigator.pushReplacementNamed(context, '/telacadastroUsuario');
+        Navigator.pushReplacementNamed(context, '/funcionarios');
       }
     } catch (e) {
       print('Erro ao verificar status de autenticação: $e');
+
     }
 
     setState(() {
@@ -73,7 +74,7 @@ class _telalogin extends State<Tela_Login> {
         );
 
 
-        Navigator.pushReplacementNamed(context, '/telaCadastroUsuario');
+        Navigator.pushReplacementNamed(context, '/funcionarios');
 
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -308,6 +309,28 @@ class _telalogin extends State<Tela_Login> {
                       ),
 
                       SizedBox(height: 30),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Não tem uma conta? ',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamed(context, '/telaCadastro');
+                            },
+                            child: Text(
+                              'Criar conta',
+                              style: TextStyle(
+                                color: Colors.red[400],
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

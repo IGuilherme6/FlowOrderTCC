@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:floworder/view/TelaCaixa.dart';
+import 'package:floworder/view/TelaCardapio.dart';
+import 'package:floworder/view/TelaDashboard.dart';
+import 'package:floworder/view/TelaPedidos.dart';
+import 'package:floworder/view/TelaRelatorios.dart';
+import 'package:floworder/view/Tela_CadastroUsuario.dart';
 
 class Barralateral extends StatelessWidget {
   final String currentRoute;
-  final Function(String) onItemTapped;
 
   const Barralateral({
     Key? key,
     required this.currentRoute,
-    required this.onItemTapped,
   }) : super(key: key);
 
   // Cores definidas
@@ -51,37 +55,49 @@ class Barralateral extends StatelessWidget {
               ],
             ),
           ),
-          // Menu Items
           const SizedBox(height: 40),
+          // Menu Items
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(0),
               children: [
                 _buildMenuItem(
+                  context: context,
                   icon: Icons.dashboard,
                   title: 'Dashboard',
                   route: '/dashboard',
                 ),
                 const SizedBox(height: 20),
                 _buildMenuItem(
-                  icon: Icons.build,
+                  context: context,
+                  icon: Icons.point_of_sale,
+                  title: 'Caixa',
+                  route: '/caixa',
+                ),
+                const SizedBox(height: 20),
+                _buildMenuItem(
+                  context: context,
+                  icon: Icons.fact_check_outlined,
                   title: 'Pedidos',
                   route: '/pedidos',
                 ),
                 const SizedBox(height: 20),
                 _buildMenuItem(
+                  context: context,
                   icon: Icons.menu_book,
                   title: 'Cardápio',
                   route: '/cardapio',
                 ),
                 const SizedBox(height: 20),
                 _buildMenuItem(
+                  context: context,
                   icon: Icons.person,
                   title: 'Funcionários',
                   route: '/funcionarios',
                 ),
                 const SizedBox(height: 20),
                 _buildMenuItem(
+                  context: context,
                   icon: Icons.analytics,
                   title: 'Relatórios',
                   route: '/relatorios',
@@ -94,7 +110,51 @@ class Barralateral extends StatelessWidget {
     );
   }
 
+  /// Função que faz a navegação com transição fade
+  void navigateWithFade(BuildContext context, String routeName) {
+    if (ModalRoute.of(context)?.settings.name == routeName) {
+      return; // Já está na tela, não faz nada
+    }
+
+    Navigator.of(context).pushReplacement(
+      PageRouteBuilder(
+        settings: RouteSettings(name: routeName),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            getPageForRoute(routeName),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        transitionDuration: Duration(milliseconds: 300),
+      ),
+    );
+  }
+
+  // Mapeamento das rotas para as telas
+  Widget getPageForRoute(String route) {
+    switch (route) {
+      case '/dashboard':
+        return TelaDashboard();
+      case '/caixa':
+        return TelaCaixa();
+      case '/pedidos':
+        return TelaPedidos();
+      case '/cardapio':
+        return TelaCardapio();
+      case '/funcionarios':
+        return TelaCadastroUsuario();
+      case '/relatorios':
+        return TelaRelatorio();
+      default:
+        return TelaDashboard();
+    }
+  }
+
+  // Criação dos itens do menu
   Widget _buildMenuItem({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required String route,
@@ -121,7 +181,7 @@ class Barralateral extends StatelessWidget {
             fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
-        onTap: () => onItemTapped(route),
+        onTap: () => navigateWithFade(context, route),
         dense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       ),

@@ -25,12 +25,12 @@ void main() {
     });
 
     test('deve ter tipos de usuário válidos', () {
-      expect(usuario.tipo, containsAll(['Garçom', 'Atendente', 'Cozinheiro']));
+      expect(usuario.cargo, containsAll(['Garçom', 'Atendente', 'Cozinheiro']));
     });
 
     test('deve permitir definir tipos de usuário customizados', () {
-      usuario.tipo = ['Gerente', 'Administrador'];
-      expect(usuario.tipo, equals(['Gerente', 'Administrador']));
+      usuario.cargo = ['Gerente', 'Administrador'] as String;
+      expect(usuario.cargo, equals(['Gerente', 'Administrador']));
     });
 
     test('métodos autenticar e alterarSenha devem existir e não lançar', () {
