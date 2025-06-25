@@ -6,8 +6,10 @@ class CardapioController {
   final CollectionReference _cardapioRef;
 
   CardapioController({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _cardapioRef = (firestore ?? FirebaseFirestore.instance).collection('cardapio');
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _cardapioRef = (firestore ?? FirebaseFirestore.instance).collection(
+        'cardapio',
+      );
 
   Future<void> adicionarItem(ItemCardapio item) async {
     await _cardapioRef.add({

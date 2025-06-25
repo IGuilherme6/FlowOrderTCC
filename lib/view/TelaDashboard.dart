@@ -24,9 +24,7 @@ class _TelaDashboardState extends State<TelaDashboard> {
       body: Row(
         children: [
           // Barra lateral
-          Barralateral(
-            currentRoute: '/dashboard',
-          ),
+          Barralateral(currentRoute: '/dashboard'),
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.all(24),
@@ -62,6 +60,4 @@ class _TelaDashboardState extends State<TelaDashboard> {
       ),
     );
   }
-
-
 }

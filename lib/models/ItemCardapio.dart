@@ -23,4 +23,3 @@ class ItemCardapio {
     _descricao = value;
   }
 }
-

@@ -24,9 +24,7 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
       body: Row(
         children: [
           // Barra lateral
-          Barralateral(
-            currentRoute: '/relatorios',
-          ),
+          Barralateral(currentRoute: '/relatorios'),
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.all(24),
@@ -62,6 +60,4 @@ class _TelaRelatorioState extends State<TelaRelatorio> {
       ),
     );
   }
-
-
 }

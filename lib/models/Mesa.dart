@@ -23,12 +23,7 @@ class Mesa {
     _Status = value;
   }
 
-  void AdicionarMesa(){
+  void AdicionarMesa() {}
 
-  }
-
-  void gerenciarMesa(){
-
-  }
-
+  void gerenciarMesa() {}
 }

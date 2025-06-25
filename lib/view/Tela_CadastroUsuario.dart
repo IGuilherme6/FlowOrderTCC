@@ -17,15 +17,17 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
   final _cpfController = TextEditingController();
+  String? _uidController = null;
 
   final Validador _validador = Validador();
-  final Usuario funcionario = Usuario();
   UsuarioController usuarioController = UsuarioController();
+  late bool _editarFuncionario = false;
+  late bool _tipoLista = true;
 
   String? _selectedCargo;
   bool _isPasswordVisible = false;
 
-  List<String> _cargos = ['Garçom', 'Atendente', 'Cozinheiro',];
+  List<String> _cargos = ['Garçom', 'Atendente', 'Cozinheiro'];
 
   // Cores do tema
   static const Color primaryRed = Color(0xFFDC2626);
@@ -37,17 +39,18 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
   static const Color textGray = Color(0xFF9CA3AF);
   static const Color borderGray = Color(0xFF374151);
 
-
-  Future<void> _cadastrarFuncionario() async {
-    UsuarioController usuarioController = UsuarioController();
+  Future<void> _cadastrarFuncionario(funcionario) async {
     String mensagem = await usuarioController.cadastrarFuncionario(funcionario);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(await mensagem),
-        backgroundColor: Colors.blue,
-      ),
+      SnackBar(content: Text(await mensagem), backgroundColor: Colors.blue),
     );
+  }
 
+  Future<void> _EdiatarFuncionario(funcionario) async {
+    String mensagem = await usuarioController.editarFuncionario(funcionario);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(await mensagem), backgroundColor: Colors.blue),
+    );
   }
 
   @override
@@ -59,9 +62,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
       backgroundColor: backgroundBlack,
       body: Row(
         children: [
-          Barralateral(
-            currentRoute: '/funcionarios',
-          ),
+          Barralateral(currentRoute: '/funcionarios'),
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.all(24),
@@ -81,20 +82,20 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                   // Layout principal
                   isWideScreen
                       ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _buildListagemUsuarios()),
-                      SizedBox(width: 24),
-                      Expanded(child: _buildFormCard()),
-                    ],
-                  )
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: _buildListagemUsuarios()),
+                            SizedBox(width: 24),
+                            Expanded(child: _buildFormCard()),
+                          ],
+                        )
                       : Column(
-                    children: [
-                      _buildListagemUsuarios(),
-                      SizedBox(height: 24),
-                      _buildFormCard(),
-                    ],
-                  ),
+                          children: [
+                            _buildListagemUsuarios(),
+                            SizedBox(height: 24),
+                            _buildFormCard(),
+                          ],
+                        ),
                 ],
               ),
             ),
@@ -107,10 +108,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
   /// Listagem
   Widget _buildListagemUsuarios() {
     return Container(
-      constraints: BoxConstraints(
-        minHeight: 400,
-        maxHeight: 500, // 🔥 Altura fixa do card
-      ),
+      constraints: BoxConstraints(minHeight: 400, maxHeight: 500),
       decoration: BoxDecoration(
         color: cardBlack,
         borderRadius: BorderRadius.circular(20),
@@ -140,21 +138,23 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              SizedBox(width: 16),
+              _buildDropdownStatus(),
             ],
+
           ),
           SizedBox(height: 16),
 
-          // 🔥 StreamBuilder para dados dinâmicos
-          Expanded(
+          // StreamBuilder para dados dinâmicos
+          Container(
+            height: 360,
             child: StreamBuilder<QuerySnapshot>(
-              stream: usuarioController.listarFuncionarios(),
+              stream: usuarioController.listarFuncionariosAtivos(),//ver como colocar em uma condicional para mudar o tipo de listagem de ativo para inativo
               builder: (context, snapshot) {
-                // 🔥 Estados de carregamento e erro
+                // Estados de carregamento e erro
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
-                    child: CircularProgressIndicator(
-                      color: primaryRed,
-                    ),
+                    child: CircularProgressIndicator(color: primaryRed),
                   );
                 }
 
@@ -179,7 +179,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                   );
                 }
 
-                // 🔥 Verifica se há dados
+                // Verifica se há dados
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
                     child: Column(
@@ -196,7 +196,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                   );
                 }
 
-                // 🔥 Lista com dados do Firestore
+                // Lista com dados do Firestore
                 final funcionarios = snapshot.data!.docs;
 
                 return Scrollbar(
@@ -252,19 +252,43 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // 🔥 Botão de Editar
+                              /// Botão de Editar
                               IconButton(
-                                icon: Icon(Icons.edit, color: lightRed, size: 20),
+                                icon: Icon(
+                                  Icons.edit,
+                                  color: lightRed,
+                                  size: 20,
+                                ),
                                 onPressed: () {
-                                  usuarioController.atualizarFuncionario(doc.id, funcionario as Usuario);
+                                  setState(() {
+                                    _editarFuncionario = true;
+                                    _selectedCargo = funcionario['cargo'];
+                                    _phoneController.text =
+                                        funcionario['telefone'] ?? '';
+                                  });
+                                  _nameController.text =
+                                      funcionario['nome'] ?? '';
+                                  _emailController.text =
+                                      funcionario['email'] ?? '';
+
+                                  _cpfController.text =
+                                      funcionario['cpf'] ?? '';
+                                  _uidController = funcionario['uid'] ?? '';
                                 },
                                 tooltip: 'Editar funcionário',
                               ),
-                              // 🔥 Botão de Deletar
+
+                              /// Botão de Deletar
                               IconButton(
-                                icon: Icon(Icons.delete, color: primaryRed, size: 20),
+                                icon: Icon(
+                                  Icons.delete,
+                                  color: primaryRed,
+                                  size: 20,
+                                ),
                                 onPressed: () {
-                                  usuarioController.desativarFuncionario(doc.id);
+                                  usuarioController.desativarFuncionario(
+                                    doc.id,
+                                  );
                                 },
                                 tooltip: 'Excluir funcionário',
                               ),
@@ -284,7 +308,6 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
   }
 
   /// Formulário
-
   Widget _buildFormCard() {
     return Container(
       decoration: BoxDecoration(
@@ -311,7 +334,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                 Icon(Icons.person_add, color: primaryRed),
                 SizedBox(width: 8),
                 Text(
-                  'Cadastro de Funcionário',
+                  'Dados de Funcionário',
                   style: TextStyle(
                     color: textWhite,
                     fontSize: 20,
@@ -340,6 +363,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
               _emailController,
               'Email',
               Icons.email,
+              enabled: !_editarFuncionario,
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Email é obrigatório';
@@ -388,20 +412,19 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
               'Senha',
               Icons.lock,
               obscure: !_isPasswordVisible,
+              enabled: !_editarFuncionario,
               validator: (value) {
-                if (value == null || value.isEmpty) {
+                if (value == null || value.isEmpty && !_editarFuncionario) {
                   return 'Senha é obrigatória';
                 }
-                if (!_validador.validarSenha(value)) {
+                if (!_validador.validarSenha(value) && !_editarFuncionario) {
                   return 'Senha deve ter pelo menos 6 caracteres';
                 }
                 return null;
               },
               suffixIcon: IconButton(
                 icon: Icon(
-                  _isPasswordVisible
-                      ? Icons.visibility_off
-                      : Icons.visibility,
+                  _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
                   color: textGray,
                 ),
                 onPressed: () {
@@ -412,40 +435,113 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
               ),
             ),
             SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryRed,
-                padding: EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryRed,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 4,
+                        shadowColor: primaryRed.withOpacity(0.3),
+                      ),
+                      icon: Icon(Icons.save, color: Colors.white),
+                      label: Text(
+                        'Salvar',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                      onPressed: () async {
+                        if (_editarFuncionario && _formKey.currentState!.validate()) {
+                          final funcionario = Usuario();
+                          funcionario.nome = _nameController.text;
+                          funcionario.telefone = _phoneController.text;
+                          funcionario.cpf = _cpfController.text;
+                          funcionario.cargo = _selectedCargo ?? '';
+                          funcionario.uid = _uidController ?? '';
+
+                          await _EdiatarFuncionario(funcionario);
+
+                          await Future.delayed(Duration(milliseconds: 100));
+                          _nameController.clear();
+                          _emailController.clear();
+                          _phoneController.clear();
+                          _cpfController.clear();
+                          _passwordController.clear();
+                          setState(() {
+                            _editarFuncionario = false;
+                            _selectedCargo = null;
+                          });
+                        } else if (_formKey.currentState!.validate()) {
+                          final novoFuncionario = Usuario();
+                          novoFuncionario.nome = _nameController.text;
+                          novoFuncionario.email = _emailController.text;
+                          novoFuncionario.telefone = _phoneController.text;
+                          novoFuncionario.cpf = _cpfController.text;
+                          novoFuncionario.cargo = _selectedCargo ?? '';
+                          novoFuncionario.senha = _passwordController.text;
+
+                          await _cadastrarFuncionario(novoFuncionario);
+
+                          await Future.delayed(Duration(milliseconds: 100));
+                          _nameController.clear();
+                          _emailController.clear();
+                          _phoneController.clear();
+                          _cpfController.clear();
+                          _passwordController.clear();
+                          setState(() {
+                            _selectedCargo = null;
+                          });
+                        }
+                      },
+                    ),
+                  ),
                 ),
-              ),
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  funcionario.nome = _nameController.text;
-                  funcionario.email = _emailController.text;
-                  funcionario.telefone = _phoneController.text;
-                  funcionario.cpf = _cpfController.text;
-                  funcionario.cargo = (_selectedCargo ?? '');
-                  funcionario.senha = _passwordController.text;
-
-                  _cadastrarFuncionario();
-                  // Limpar os campos após o cadastro
-                  _formKey.currentState!.reset();
-
-
-                }
-
-              },
-              child: Text(
-                'Cadastrar Funcionário',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16),
-              ),
-
-            )
+                SizedBox(width: 16),
+                Expanded(
+                  child: SizedBox(
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[800],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 2,
+                        shadowColor: Colors.black.withOpacity(0.2),
+                      ),
+                      icon: Icon(Icons.cleaning_services, color: Colors.white),
+                      label: Text(
+                        'Limpar',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                      onPressed: () {
+                        _nameController.clear();
+                        _emailController.clear();
+                        _phoneController.clear();
+                        _cpfController.clear();
+                        _passwordController.clear();
+                        setState(() {
+                          _editarFuncionario = false;
+                          _selectedCargo = null;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -453,18 +549,20 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
   }
 
   Widget _buildInput(
-      TextEditingController controller,
-      String label,
-      IconData icon, {
-        bool obscure = false,
-        Widget? suffixIcon,
-        String? Function(String?)? validator,
-      }) {
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    bool obscure = false,
+    Widget? suffixIcon,
+    String? Function(String?)? validator,
+        bool enabled = true,
+  }) {
     return TextFormField(
       controller: controller,
       obscureText: obscure,
       style: TextStyle(color: textWhite),
       validator: validator,
+      enabled: enabled,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(color: textGray),
@@ -497,6 +595,51 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
     );
   }
 
+  Widget _buildDropdownStatus() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 5, vertical: 0),
+      decoration: BoxDecoration(
+        color: backgroundBlack,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderGray),
+      ),
+      child: DropdownButton<String>(
+        value: _tipoLista ? 'Ativos' : 'Inativos',
+        style: TextStyle(color: textWhite, fontSize: 14),
+        dropdownColor: cardBlack,
+        underline: SizedBox(), // Remove a linha padrão do dropdown
+        icon: Icon(Icons.arrow_drop_down, color: textWhite),
+        items: ['Ativos', 'Inativos'].map((String status) {
+          return DropdownMenuItem<String>(
+            value: status,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.person,
+                  color: primaryRed,
+                  size: 16,
+                ),
+                SizedBox(width: 8),
+                Text(status),
+              ],
+            ),
+          );
+        }).toList(),
+        onChanged: (String? newValue) {
+          setState(() {
+            if (newValue == 'Ativos') {
+              _tipoLista = true;
+            } else {
+              _tipoLista = false;
+            }
+          });
+        },
+      ),
+    );
+  }
+
+
   Widget _buildDropdownCargo() {
     return DropdownButtonFormField<String>(
       value: _selectedCargo,
@@ -522,10 +665,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
         fillColor: backgroundBlack,
       ),
       items: _cargos.map((String cargo) {
-        return DropdownMenuItem<String>(
-          value: cargo,
-          child: Text(cargo),
-        );
+        return DropdownMenuItem<String>(value: cargo, child: Text(cargo));
       }).toList(),
       onChanged: (String? newValue) {
         setState(() {
@@ -540,5 +680,4 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
       },
     );
   }
-
 }

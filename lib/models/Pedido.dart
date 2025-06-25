@@ -4,7 +4,7 @@ import 'Mesa.dart';
 
 class Pedido {
   late DateTime _horario;
-  List<ItemCardapio> itens = [];   // inicializado aqui
+  List<ItemCardapio> itens = []; // inicializado aqui
   static List<String> _status = ['Aberto', 'Em Preparo', 'Pronto'];
   late Mesa _mesa;
   String _statusAtual = 'Aberto';
