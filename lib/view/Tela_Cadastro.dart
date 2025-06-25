@@ -18,6 +18,7 @@ class _TelaCadastro extends State<Tela_Cadastro> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _cpfController = TextEditingController();
+  final _TelefoneController = TextEditingController();
 
   Usuario usuario = Usuario();
   Validador validar = Validador();
@@ -121,7 +122,7 @@ class _TelaCadastro extends State<Tela_Cadastro> {
                       SizedBox(height: 40),
 
                       // Campo Nomes
-                      _buildInputField(
+                      _buildInput(
                         controller: _nameController,
                         label: 'Nome Completo',
                         icon: Icons.person,
@@ -137,7 +138,7 @@ class _TelaCadastro extends State<Tela_Cadastro> {
                       SizedBox(height: 20),
 
                       // Campo E-mail
-                      _buildInputField(
+                      _buildInput(
                         controller: _emailController,
                         label: 'E-mail',
                         icon: Icons.email,
@@ -153,29 +154,44 @@ class _TelaCadastro extends State<Tela_Cadastro> {
 
                       SizedBox(height: 20),
 
+                      _buildInput(
+                        controller: _TelefoneController,
+                        label: 'Telefone',
+                        icon: Icons.badge,
+                        validator: (value) {
+                          if (!validar.validarTelefone(value!)) {
+                            return 'Telefone não esta Valido';
+                          }
+                          return null;
+                        },
+                        inputFormatters: [Formatar.telefone()],
+                        keyboardType: TextInputType.phone,
+                      ),
+
+                      SizedBox(height: 20),
                       //campo cpf
-                      _buildInputField(
+                      _buildInput(
                         controller: _cpfController,
                         label: 'CPF',
                         icon: Icons.badge,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [Formatar.cpf()],
                         validator: (value) {
                           if (!validar.validarCPF(value!)) {
                             return 'CPF não esta Valido';
                           }
                           return null;
                         },
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [Formatar.cpf()],
                       ),
 
                       SizedBox(height: 20),
 
                       // Campo Senha
-                      _buildInputField(
+                      _buildInput(
                         controller: _passwordController,
                         label: 'Senha',
                         icon: Icons.lock,
-                        obscureText: _obscurePassword,
+                        obscure: _obscurePassword,
                         suffixIcon: IconButton(
                           icon: Icon(
                             _obscurePassword
@@ -195,7 +211,6 @@ class _TelaCadastro extends State<Tela_Cadastro> {
                           }
                           return null;
                         },
-                        inputFormatters: [],
                       ),
 
                       SizedBox(height: 20),
@@ -276,15 +291,15 @@ class _TelaCadastro extends State<Tela_Cadastro> {
     );
   }
 
-  Widget _buildInputField({
+  Widget _buildInput({
     required TextEditingController controller,
     required String label,
     required IconData icon,
-    bool obscureText = false,
+    bool obscure = false,
     TextInputType keyboardType = TextInputType.text,
     Widget? suffixIcon,
     String? Function(String?)? validator,
-    required List<TextInputFormatter> inputFormatters,
+    List<TextInputFormatter>? inputFormatters
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -301,10 +316,11 @@ class _TelaCadastro extends State<Tela_Cadastro> {
       ),
       child: TextFormField(
         controller: controller,
-        obscureText: obscureText,
+        obscureText: obscure,
         keyboardType: keyboardType,
         style: TextStyle(color: Colors.white),
         validator: validator,
+        inputFormatters: inputFormatters,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(color: Colors.white70),

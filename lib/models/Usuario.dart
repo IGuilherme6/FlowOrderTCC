@@ -1,10 +1,10 @@
 class Usuario {
+  late String _uid;
   late String _nome;
   late String _email;
   late String _senha;
   late String _cpf;
   late String _telefone;
-  late String _uid;
   late String _cargo;
 
   String get nome => _nome;
