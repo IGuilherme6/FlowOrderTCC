@@ -6,6 +6,8 @@ import 'package:floworder/view/TelaPedidos.dart';
 import 'package:floworder/view/TelaRelatorios.dart';
 import 'package:floworder/view/Tela_CadastroUsuario.dart';
 
+import 'TelaMesa.dart';
+
 class Barralateral extends StatelessWidget {
   final String currentRoute;
 
@@ -88,6 +90,13 @@ class Barralateral extends StatelessWidget {
                 const SizedBox(height: 20),
                 _buildMenuItem(
                   context: context,
+                  icon: Icons.table_bar,
+                  title: 'Mesas',
+                  route: '/mesas',
+                ),
+                const SizedBox(height: 20),
+                _buildMenuItem(
+                  context: context,
                   icon: Icons.person,
                   title: 'Funcionários',
                   route: '/funcionarios',
@@ -135,6 +144,8 @@ class Barralateral extends StatelessWidget {
         return TelaCaixa();
       case '/pedidos':
         return TelaPedidos();
+      case '/mesas':
+        return TelaMesa();
       case '/cardapio':
         return TelaCardapio();
       case '/funcionarios':
