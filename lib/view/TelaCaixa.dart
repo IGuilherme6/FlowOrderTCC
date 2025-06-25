@@ -24,9 +24,7 @@ class _TelaCaixaState extends State<TelaCaixa> {
       body: Row(
         children: [
           // Barra lateral
-          Barralateral(
-            currentRoute: '/caixa',
-          ),
+          Barralateral(currentRoute: '/caixa'),
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.all(24),
@@ -62,6 +60,4 @@ class _TelaCaixaState extends State<TelaCaixa> {
       ),
     );
   }
-
-
 }

@@ -3,9 +3,7 @@ import 'package:floworder/view/Tela_CadastroUsuario.dart';
 import 'package:floworder/view/Tela_Login.dart';
 import 'package:flutter/material.dart';
 
-
 class TelaDecisao extends StatelessWidget {
-
   const TelaDecisao({super.key});
 
   @override
@@ -17,11 +15,7 @@ class TelaDecisao extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             backgroundColor: Colors.black,
-            body: Center(
-              child: CircularProgressIndicator(
-                color: Colors.red,
-              ),
-            ),
+            body: Center(child: CircularProgressIndicator(color: Colors.red)),
           );
         }
 

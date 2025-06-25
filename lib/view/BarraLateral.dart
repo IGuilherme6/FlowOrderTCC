@@ -9,10 +9,7 @@ import 'package:floworder/view/Tela_CadastroUsuario.dart';
 class Barralateral extends StatelessWidget {
   final String currentRoute;
 
-  const Barralateral({
-    Key? key,
-    required this.currentRoute,
-  }) : super(key: key);
+  const Barralateral({Key? key, required this.currentRoute}) : super(key: key);
 
   // Cores definidas
   static const Color primaryRed = Color(0xFFDC2626);
@@ -122,10 +119,7 @@ class Barralateral extends StatelessWidget {
         pageBuilder: (context, animation, secondaryAnimation) =>
             getPageForRoute(routeName),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+          return FadeTransition(opacity: animation, child: child);
         },
         transitionDuration: Duration(milliseconds: 300),
       ),
@@ -168,11 +162,7 @@ class Barralateral extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: ListTile(
-        leading: Icon(
-          icon,
-          color: isActive ? textWhite : textGray,
-          size: 20,
-        ),
+        leading: Icon(icon, color: isActive ? textWhite : textGray, size: 20),
         title: Text(
           title,
           style: TextStyle(

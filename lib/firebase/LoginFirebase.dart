@@ -30,7 +30,6 @@ class LoginFirebase {
       } else {
         return 'Falha na autenticação';
       }
-
     } on FirebaseAuthException catch (e) {
       // Tratamento específico dos erros do Firebase Auth
       return _handleFirebaseError(e.code);

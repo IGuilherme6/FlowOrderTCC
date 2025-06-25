@@ -24,9 +24,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
       body: Row(
         children: [
           // Barra lateral
-          Barralateral(
-            currentRoute: '/cardapio',
-          ),
+          Barralateral(currentRoute: '/cardapio'),
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.all(24),
@@ -62,6 +60,4 @@ class _TelaCardapioState extends State<TelaCardapio> {
       ),
     );
   }
-
-
 }

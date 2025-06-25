@@ -11,10 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 
-void main() async{
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+void main() async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   runApp(MyApp());
@@ -39,10 +37,8 @@ class MyApp extends StatelessWidget {
         '/pedidos': (context) => TelaPedidos(),
         '/caixa': (context) => TelaCaixa(),
         '/cardapio': (context) => TelaCardapio(),
-
       },
       debugShowCheckedModeBanner: false,
     );
   }
-
-  }
+}

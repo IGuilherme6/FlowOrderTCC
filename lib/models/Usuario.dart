@@ -4,12 +4,11 @@ class Usuario {
   late String _senha;
   late String _cpf;
   late String _telefone;
-  late String _uidGerente;
+  late String _uid;
   late String _cargo;
 
   String get nome => _nome;
   set nome(String value) => _nome = value;
-
 
   String get telefone => _telefone;
 
@@ -19,7 +18,6 @@ class Usuario {
 
   String get email => _email;
   set email(String value) => _email = value;
-
 
   String get cargo => _cargo;
 
@@ -40,9 +38,9 @@ class Usuario {
     // lógica de alteração de senha
   }
 
-  String get uidGerente => _uidGerente;
+  String get uid => _uid;
 
-  set uidGerente(String value) {
-    _uidGerente = value;
+  set uid(String value) {
+    _uid = value;
   }
 }

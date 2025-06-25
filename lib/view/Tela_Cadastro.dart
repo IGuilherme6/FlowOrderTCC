@@ -34,23 +34,17 @@ class _TelaCadastro extends State<Tela_Cadastro> {
     super.dispose();
   }
 
-
   Future<void> _register() async {
     setState(() {
       _isLoading = true;
     });
-
-
     UsuarioController usuarioController = UsuarioController();
     String mensagem = await usuarioController.cadastrarGerente(usuario);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(await mensagem),
-        backgroundColor: Colors.blue,
-      ),
+      SnackBar(content: Text(await mensagem), backgroundColor: Colors.blue),
     );
     if (mensagem == 'Usuário cadastrado com sucesso') {
-      Navigator.pushReplacementNamed(context, '/funcionarios');//mudar depois
+      Navigator.pushReplacementNamed(context, '/funcionarios'); //mudar depois
     }
 
     setState(() {
@@ -67,11 +61,7 @@ class _TelaCadastro extends State<Tela_Cadastro> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.black,
-              Colors.grey[900]!,
-              Colors.black,
-            ],
+            colors: [Colors.black, Colors.grey[900]!, Colors.black],
           ),
         ),
         child: SafeArea(
@@ -106,8 +96,6 @@ class _TelaCadastro extends State<Tela_Cadastro> {
                               height: 100,
                               // ...
                             ),
-
-
                           ],
                         ),
                       ),
@@ -127,10 +115,7 @@ class _TelaCadastro extends State<Tela_Cadastro> {
 
                       Text(
                         'Cadastrar Um Nova Conta de Um Gerente',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                        ),
+                        style: TextStyle(color: Colors.white70, fontSize: 16),
                       ),
 
                       SizedBox(height: 40),
@@ -145,7 +130,8 @@ class _TelaCadastro extends State<Tela_Cadastro> {
                             return 'Por favor, insira seu nome';
                           }
                           return null;
-                        }, inputFormatters: [],
+                        },
+                        inputFormatters: [],
                       ),
 
                       SizedBox(height: 20),
@@ -161,7 +147,8 @@ class _TelaCadastro extends State<Tela_Cadastro> {
                             return 'Email não esta Valido';
                           }
                           return null;
-                        }, inputFormatters: [],
+                        },
+                        inputFormatters: [],
                       ),
 
                       SizedBox(height: 20),
@@ -191,7 +178,9 @@ class _TelaCadastro extends State<Tela_Cadastro> {
                         obscureText: _obscurePassword,
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                             color: Colors.white70,
                           ),
                           onPressed: () {
@@ -205,28 +194,29 @@ class _TelaCadastro extends State<Tela_Cadastro> {
                             return 'Por favor, insira uma senha, mínimo 6 caracteres';
                           }
                           return null;
-                        }, inputFormatters: [],
+                        },
+                        inputFormatters: [],
                       ),
 
                       SizedBox(height: 20),
-
-
 
                       // Botão Cadastrar
                       Container(
                         width: double.infinity,
                         height: 55,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : () {
-                            if (_formKey.currentState!.validate()) {
-                              usuario.nome = _nameController.text;
-                              usuario.email = _emailController.text;
-                              usuario.senha = _passwordController.text;
-                              usuario.cpf = _cpfController.text;
-                              usuario.cargo = 'Gerente';
-                              _register();
-                            }
-                          },
+                          onPressed: _isLoading
+                              ? null
+                              : () {
+                                  if (_formKey.currentState!.validate()) {
+                                    usuario.nome = _nameController.text;
+                                    usuario.email = _emailController.text;
+                                    usuario.senha = _passwordController.text;
+                                    usuario.cpf = _cpfController.text;
+                                    usuario.cargo = 'Gerente';
+                                    _register();
+                                  }
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red[900],
                             shape: RoundedRectangleBorder(
@@ -236,18 +226,18 @@ class _TelaCadastro extends State<Tela_Cadastro> {
                           ),
                           child: _isLoading
                               ? CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          )
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                )
                               : Text(
-                            'CADASTRAR',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
-                            ),
-                          ),
+                                  'CADASTRAR',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
                         ),
                       ),
 
@@ -275,7 +265,6 @@ class _TelaCadastro extends State<Tela_Cadastro> {
                         ],
                       ),
                       SizedBox(height: 20),
-
                     ],
                   ),
                 ),
@@ -294,16 +283,14 @@ class _TelaCadastro extends State<Tela_Cadastro> {
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
     Widget? suffixIcon,
-    String? Function(String?)? validator, required List<TextInputFormatter> inputFormatters,
+    String? Function(String?)? validator,
+    required List<TextInputFormatter> inputFormatters,
   }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.grey[850],
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: Colors.red.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.red.withOpacity(0.3), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.red.withOpacity(0.1),

@@ -24,9 +24,7 @@ class _TelaPedidosState extends State<TelaPedidos> {
       body: Row(
         children: [
           // Barra lateral
-          Barralateral(
-            currentRoute: '/pedidos',
-          ),
+          Barralateral(currentRoute: '/pedidos'),
           Expanded(
             child: SingleChildScrollView(
               padding: EdgeInsets.all(24),
@@ -62,6 +60,4 @@ class _TelaPedidosState extends State<TelaPedidos> {
       ),
     );
   }
-
-
 }

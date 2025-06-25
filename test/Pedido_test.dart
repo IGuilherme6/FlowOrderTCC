@@ -7,8 +7,7 @@ void main() {
     late Pedido pedido;
 
     setUp(() {
-      pedido = Pedido()
-        ..statusAtual = 'Aberto';
+      pedido = Pedido()..statusAtual = 'Aberto';
     });
 
     test('deve conter status válidos definidos', () {
