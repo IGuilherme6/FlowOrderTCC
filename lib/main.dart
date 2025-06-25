@@ -2,6 +2,7 @@ import 'package:floworder/view/TelaCaixa.dart';
 import 'package:floworder/view/TelaCardapio.dart';
 import 'package:floworder/view/TelaDashboard.dart';
 import 'package:floworder/view/TelaDecisao.dart';
+import 'package:floworder/view/TelaMesa.dart';
 import 'package:floworder/view/TelaPedidos.dart';
 import 'package:floworder/view/TelaRelatorios.dart';
 import 'package:floworder/view/Tela_Cadastro.dart';
@@ -37,6 +38,7 @@ class MyApp extends StatelessWidget {
         '/pedidos': (context) => TelaPedidos(),
         '/caixa': (context) => TelaCaixa(),
         '/cardapio': (context) => TelaCardapio(),
+        '/mesas': (context) => TelaMesa(),
       },
       debugShowCheckedModeBanner: false,
     );
