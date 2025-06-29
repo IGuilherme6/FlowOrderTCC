@@ -19,7 +19,7 @@ class TelaDecisao extends StatelessWidget {
           );
         }
 
-        // Se o usuário está logado, manda para TelaHome
+        // Se o usuário está logado, manda para de cadastro de funcionário
         if (snapshot.hasData) {
           return TelaCadastroUsuario();
         }

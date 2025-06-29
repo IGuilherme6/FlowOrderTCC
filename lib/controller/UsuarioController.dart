@@ -25,11 +25,12 @@ class UsuarioController {
       String userId = userCredential.user!.uid;
 
       await _usuariosRef.doc(userId).set({
+        'uid': userId,
         'nome': usuario.nome,
         'email': usuario.email,
+        'telefone': usuario.telefone,
         'cargo': 'Gerente',
         'cpf': usuario.cpf,
-        'uid': userId,
         'ativo': true,
         'criadoEm': FieldValue.serverTimestamp(),
       });
@@ -92,7 +93,6 @@ class UsuarioController {
             'telefone': usuario.telefone,
             'cargo': usuario.cargo,
             'cpf': usuario.cpf,
-            'funcionarioId': funcionarioId,
             'ativo': true,
             'criadoEm': FieldValue.serverTimestamp(),
           });
@@ -144,6 +144,18 @@ class UsuarioController {
         .update({'ativo': false});
   }
 
+  /// Ativar funcionário
+  Future<void> ativarFuncionario(String funcionarioId) async {
+    String? gerenteId = pegarIdUsuarioLogado();
+    if (gerenteId == null) throw Exception('Nenhum gerente logado');
+
+    await _usuariosRef
+        .doc(gerenteId)
+        .collection('funcionarios')
+        .doc(funcionarioId)
+        .update({'ativo': true});
+  }
+
   /// editar funcionário
   Future<String> editarFuncionario(Usuario usuario) async {
     String? gerenteId = pegarIdUsuarioLogado();
@@ -165,4 +177,6 @@ class UsuarioController {
       return 'Erro ao editar funcionário: ${e.toString()}';
     }
   }
+
+
 }

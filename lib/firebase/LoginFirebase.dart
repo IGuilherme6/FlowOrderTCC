@@ -1,10 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:floworder/auxiliar/Validador.dart';
 
 class LoginFirebase {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  Validador validador = Validador();
 
   Future<String> login(String email, String password) async {
     try {
+      await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
       // Validações básicas
       if (email.isEmpty) {
         return 'Email não pode estar vazio';
@@ -14,7 +17,7 @@ class LoginFirebase {
         return 'Senha não pode estar vazia';
       }
 
-      if (!_isValidEmail(email)) {
+      if (!validador.validarEmail(email)) {
         return 'Email inválido';
       }
 
@@ -40,9 +43,6 @@ class LoginFirebase {
   }
 
   // Método para validar email
-  bool _isValidEmail(String email) {
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
-  }
 
   // Tratamento dos erros do Firebase Auth em português
   String _handleFirebaseError(String errorCode) {
@@ -99,7 +99,7 @@ class LoginFirebase {
         return 'Email não pode estar vazio';
       }
 
-      if (!_isValidEmail(email)) {
+      if (!validador.validarEmail(email)) {
         return 'Email inválido';
       }
 

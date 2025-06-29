@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:floworder/controller/UsuarioController.dart';
 import 'package:floworder/models/Usuario.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../auxiliar/Formatar.dart';
 import '../auxiliar/Validador.dart';
 import 'BarraLateral.dart';
 
@@ -31,7 +33,6 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
 
   // Cores do tema
   static const Color primaryRed = Color(0xFFDC2626);
-  static const Color darkRed = Color(0xFF991B1B);
   static const Color lightRed = Color(0xFFEF4444);
   static const Color backgroundBlack = Color(0xFF111827);
   static const Color cardBlack = Color(0xFF1F2937);
@@ -149,7 +150,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
           Container(
             height: 360,
             child: StreamBuilder<QuerySnapshot>(
-              stream: usuarioController.listarFuncionariosAtivos(),//ver como colocar em uma condicional para mudar o tipo de listagem de ativo para inativo
+              stream: _tipoLista ? usuarioController.listarFuncionariosAtivos() : usuarioController.listarFuncionariosInativos(),
               builder: (context, snapshot) {
                 // Estados de carregamento e erro
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -260,38 +261,103 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                                   size: 20,
                                 ),
                                 onPressed: () {
-                                  setState(() {
-                                    _editarFuncionario = true;
-                                    _selectedCargo = funcionario['cargo'];
-                                    _phoneController.text =
-                                        funcionario['telefone'] ?? '';
-                                  });
-                                  _nameController.text =
-                                      funcionario['nome'] ?? '';
-                                  _emailController.text =
-                                      funcionario['email'] ?? '';
+                                  !_tipoLista ? ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Funcionários Inativos não podem ser editados'),
+                                      backgroundColor: lightRed,
+                                    ),
+                                  ) : (() {
+                                    setState(() {
+                                      _editarFuncionario = true;
+                                      _selectedCargo = funcionario['cargo'];
+                                      _phoneController.text =
+                                          funcionario['telefone'] ?? '';
+                                    _nameController.text =
+                                        funcionario['nome'] ?? '';
+                                    _emailController.text =
+                                        funcionario['email'] ?? '';
 
-                                  _cpfController.text =
-                                      funcionario['cpf'] ?? '';
-                                  _uidController = funcionario['uid'] ?? '';
+                                    _cpfController.text =
+                                        funcionario['cpf'] ?? '';
+                                    _uidController = funcionario['uid'] ?? '';
+                                  });
+                                  })();
                                 },
                                 tooltip: 'Editar funcionário',
                               ),
 
                               /// Botão de Deletar
-                              IconButton(
-                                icon: Icon(
-                                  Icons.delete,
-                                  color: primaryRed,
-                                  size: 20,
-                                ),
-                                onPressed: () {
-                                  usuarioController.desativarFuncionario(
-                                    doc.id,
-                                  );
-                                },
-                                tooltip: 'Excluir funcionário',
+                        _tipoLista
+                            ? IconButton(
+                          icon: Icon(
+                            Icons.person_remove,
+                            color: primaryRed,
+                            size: 20,
+                          ),
+                          onPressed: () async {
+                            final confirmar = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                backgroundColor: backgroundBlack,
+                                title: Text('Confirmar Desativação', style: TextStyle(color: textWhite),),
+                                content: Text('Tem certeza que deseja desativar este funcionário?', style: TextStyle(color: textWhite),),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: Text('Cancelar', style: TextStyle(color: primaryRed),),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: Text('Desativar', style: TextStyle(color: primaryRed),),
+                                  ),
+                                ],
                               ),
+                            );
+
+                            if (confirmar == true) {
+                              usuarioController.desativarFuncionario(doc.id);
+                            }
+                          },
+                          tooltip: 'Desativar funcionário',
+                        )
+                            : IconButton(
+                          icon: Icon(
+                            Icons.person_add,
+                            color: primaryRed,
+                            size: 20,
+                          ),
+                          onPressed: () async {
+                            final confirmar = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                backgroundColor: backgroundBlack,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: BorderSide(color: borderGray)
+                                ),
+                                title: Text('Confirmar Ativação', style: TextStyle(color: textWhite),),
+                                
+                                content: Text('Tem certeza que deseja ativar este funcionário?', style: TextStyle(color: textWhite),),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: Text('Cancelar', style: TextStyle(color: primaryRed),),
+
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: Text('Ativar', style: TextStyle(color: primaryRed),),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirmar == true) {
+                              usuarioController.ativarFuncionario(doc.id);
+                            }
+                          },
+                          tooltip: 'Ativar funcionário',
+                        ),
                             ],
                           ),
                         ),
@@ -388,6 +454,8 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                 }
                 return null;
               },
+              inputFormatters: [Formatar.telefone()],
+              keyboardType: TextInputType.phone,
             ),
             SizedBox(height: 16),
             _buildInput(
@@ -403,6 +471,8 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                 }
                 return null;
               },
+              inputFormatters: [Formatar.cpf()],
+              keyboardType: TextInputType.number,
             ),
             SizedBox(height: 16),
             _buildDropdownCargo(),
@@ -556,12 +626,15 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
     Widget? suffixIcon,
     String? Function(String?)? validator,
         bool enabled = true,
+        List<TextInputFormatter>? inputFormatters,
+        TextInputType? keyboardType,
   }) {
     return TextFormField(
       controller: controller,
       obscureText: obscure,
       style: TextStyle(color: textWhite),
       validator: validator,
+      inputFormatters: inputFormatters,
       enabled: enabled,
       decoration: InputDecoration(
         labelText: label,

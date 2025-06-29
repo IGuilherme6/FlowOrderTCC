@@ -1,6 +1,9 @@
-class Validador {
+import 'package:floworder/controller/UsuarioController.dart';
+
+class Validador  {
+  UsuarioController usuarioController = UsuarioController();
+
   bool validarCPF(String cpf) {
-    return true; // Implementação simplificada para evitar erros de validação
     cpf = cpf.replaceAll(RegExp(r'[^\d]'), '');
 
     if (cpf.length != 11) return false;
@@ -53,4 +56,6 @@ class Validador {
     final telefoneRegex = RegExp(r'^\d{10,11}$');
     return telefoneRegex.hasMatch(telefone);
   }
+
+
 }
