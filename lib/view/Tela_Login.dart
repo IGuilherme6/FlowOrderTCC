@@ -52,6 +52,28 @@ class _telalogin extends State<Tela_Login> {
     });
   }
 
+  Future<void> _MudarSenha(String email) async {
+    try {
+      if (email.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Por favor, insira seu e-mail')),
+        );
+        return;
+      }
+
+      LoginFirebase loginFirebase = LoginFirebase();
+      String resultado = await loginFirebase.resetPassword(email);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(resultado)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao enviar e-mail de redefinição: $e')),
+      );
+    }
+  }
+
   Future<void> _login() async {
     setState(() {
       _isLoading = true;
@@ -287,7 +309,22 @@ class _telalogin extends State<Tela_Login> {
                                   ),
                                 ),
                         ),
+                      ), Align(
+                        alignment: Alignment.centerRight,
+                        child: GestureDetector(
+                          onTap: () => _MudarSenha(_emailController.text),
+                          child: Text(
+                            'Esqueceu a senha?',
+                            style: TextStyle(
+                              color: Colors.red[400],
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
                       ),
+
 
                       SizedBox(height: 30),
                       Row(
