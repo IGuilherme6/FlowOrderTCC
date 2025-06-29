@@ -111,4 +111,24 @@ class LoginFirebase {
       return 'Erro ao enviar email: ${e.toString()}';
     }
   }
+
+  Future<String> resetPassword(String email) async {
+    try {
+      if (email.isEmpty) {
+        return 'Email não pode estar vazio';
+      }
+
+      if (!validador.validarEmail(email)) {
+        return 'Email inválido';
+      }
+
+      await _auth.sendPasswordResetEmail(email: email.trim());
+      return 'E-mail de recuperação enviado com sucesso! Verifique sua caixa de entrada e spam.';
+
+    } on FirebaseAuthException catch (e) {
+      return _handleFirebaseError(e.code);
+    } catch (e) {
+      return 'Erro ao enviar email: ${e.toString()}';
+    }
+  }
 }

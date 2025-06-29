@@ -119,7 +119,7 @@ class Barralateral extends StatelessWidget {
   /// Função que faz a navegação com transição fade
   void navigateWithFade(BuildContext context, String routeName) {
     if (ModalRoute.of(context)?.settings.name == routeName) {
-      return; // Já está na tela, não faz nada
+      return;
     }
 
     Navigator.of(context).pushReplacement(

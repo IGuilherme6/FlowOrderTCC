@@ -287,6 +287,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                               ),
 
                               /// Botão de Deletar
+                              ///  _tipoLista ? botão1 : botão2
                         _tipoLista
                             ? IconButton(
                           icon: Icon(

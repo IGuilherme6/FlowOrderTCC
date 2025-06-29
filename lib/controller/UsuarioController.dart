@@ -7,7 +7,6 @@ class UsuarioController {
   final CollectionReference _usuariosRef = FirebaseFirestore.instance
       .collection('Gerentes');
 
-  /// Pega o ID do usuário logado
   String? pegarIdUsuarioLogado() {
     User? user = FirebaseAuth.instance.currentUser;
     return user?.uid;
@@ -16,6 +15,9 @@ class UsuarioController {
   /// Cadastro de gerente
   Future<String> cadastrarGerente(Usuario usuario) async {
     try {
+      if (await verificarCpfExistente(usuario.cpf)) {
+        return 'Erro: CPF já cadastrado';
+      }
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
             email: usuario.email,
@@ -37,13 +39,16 @@ class UsuarioController {
 
       return 'Gerente cadastrado com sucesso';
     } catch (e) {
-      return 'Erro ao cadastrar gerente: ${e.toString()}';
+      return 'Erro ao cadastrar: ${e.toString()}';
     }
   }
 
   /// Cadastro de funcionário
   Future<String> cadastrarFuncionario(Usuario usuario) async {
     try {
+      if (await verificarCpfExistente(usuario.cpf)) {
+        return 'Erro: CPF já cadastrado';
+      }
       String? gerenteId = pegarIdUsuarioLogado();
       if (gerenteId == null) return 'Erro: Nenhum gerente logado';
 
@@ -177,6 +182,44 @@ class UsuarioController {
       return 'Erro ao editar funcionário: ${e.toString()}';
     }
   }
+
+
+  Future<bool> verificarCpfExistente(String cpf) async {
+    final _firestore = FirebaseFirestore.instance;
+
+    try {
+      final gerentesCpf = await _firestore
+          .collection('Gerentes')
+          .where('cpf', isEqualTo: cpf)
+          .get();
+
+      if (gerentesCpf.docs.isNotEmpty) {
+        return true;
+      }
+
+      final gerentesSnapshot = await _firestore.collection('Gerentes').get();
+
+      for (var gerenteDoc in gerentesSnapshot.docs) {
+        final funcionariosSnapshot = await _firestore
+            .collection('Gerentes')
+            .doc(gerenteDoc.id)
+            .collection('funcionarios')
+            .where('cpf', isEqualTo: cpf)
+            .get();
+
+        if (funcionariosSnapshot.docs.isNotEmpty) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      print('Erro ao verificar CPF: $e');
+      return false;
+    }
+  }
+
+
 
 
 }

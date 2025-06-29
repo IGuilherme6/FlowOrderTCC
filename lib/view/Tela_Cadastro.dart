@@ -23,6 +23,7 @@ class _TelaCadastro extends State<Tela_Cadastro> {
   Usuario usuario = Usuario();
   Validador validar = Validador();
 
+
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -35,7 +36,7 @@ class _TelaCadastro extends State<Tela_Cadastro> {
     super.dispose();
   }
 
-  Future<void> _register() async {
+  Future<void> _register(usuario) async {
     setState(() {
       _isLoading = true;
     });
@@ -227,9 +228,10 @@ class _TelaCadastro extends State<Tela_Cadastro> {
                                     usuario.nome = _nameController.text;
                                     usuario.email = _emailController.text;
                                     usuario.senha = _passwordController.text;
+                                    usuario.telefone = _TelefoneController.text;
                                     usuario.cpf = _cpfController.text;
                                     usuario.cargo = 'Gerente';
-                                    _register();
+                                    _register(usuario);
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
