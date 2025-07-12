@@ -1,29 +1,25 @@
-import 'Pedido.dart';
 
 class Mesa {
+  late String _uid;
+  late String _nome;
   late int _numero;
-  late List<Pedido> _itens;
-  List<String> _Status = ['Abertod', 'Em Preparo'];
+
+
+  String get uid => _uid;
+
+  set uid(String value) {
+    _uid = value;
+  }
+
+  String get nome => _nome;
+
+  set nome(String value) {
+    _nome = value;
+  }
 
   int get numero => _numero;
 
   set numero(int value) {
     _numero = value;
   }
-
-  List<Pedido> get itens => _itens;
-
-  set itens(List<Pedido> value) {
-    _itens = value;
-  }
-
-  List<String> get Status => _Status;
-
-  set Status(List<String> value) {
-    _Status = value;
-  }
-
-  void AdicionarMesa() {}
-
-  void gerenciarMesa() {}
 }
