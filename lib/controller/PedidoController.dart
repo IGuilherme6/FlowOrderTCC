@@ -15,7 +15,7 @@ class PedidoController {
       'horario': pedido.horario,
       'status':
           Pedido.status, // Aqui status precisa ser static ou acessível assim
-      'mesa': pedido.mesa.numero,
+      //'mesa': pedido.mesa.numero,
       'itens': pedido.itens.map((item) => item.nome).toList(),
     });
   }

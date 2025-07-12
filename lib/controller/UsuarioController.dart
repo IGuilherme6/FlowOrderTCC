@@ -1,41 +1,25 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:floworder/firebase/UsuarioFirebase.dart';
 import '../models/Usuario.dart';
 
 class UsuarioController {
-  final CollectionReference _usuariosRef = FirebaseFirestore.instance
-      .collection('Gerentes');
-
-  String? pegarIdUsuarioLogado() {
-    User? user = FirebaseAuth.instance.currentUser;
-    return user?.uid;
-  }
+  final UsuarioFirebase _usuarioFirebase = UsuarioFirebase();
 
   /// Cadastro de gerente
   Future<String> cadastrarGerente(Usuario usuario) async {
     try {
-      if (await verificarCpfExistente(usuario.cpf)) {
+      // Verificar se CPF já existe
+      if (await _verificarCpfExistente(usuario.cpf)) {
         return 'Erro: CPF já cadastrado';
       }
-      UserCredential userCredential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
-            email: usuario.email,
-            password: usuario.senha,
-          );
 
-      String userId = userCredential.user!.uid;
-
-      await _usuariosRef.doc(userId).set({
-        'uid': userId,
-        'nome': usuario.nome,
-        'email': usuario.email,
-        'telefone': usuario.telefone,
-        'cargo': 'Gerente',
-        'cpf': usuario.cpf,
-        'ativo': true,
-        'criadoEm': FieldValue.serverTimestamp(),
-      });
+      // Criar usuário no Firebase Auth
+      String userId = await _usuarioFirebase.criarUsuarioAuth(
+        usuario.email,
+        usuario.senha,
+      );
+      // Salvar gerente no Firestore
+      await _usuarioFirebase.salvarGerente(userId, usuario);
 
       return 'Gerente cadastrado com sucesso';
     } catch (e) {
@@ -46,61 +30,28 @@ class UsuarioController {
   /// Cadastro de funcionário
   Future<String> cadastrarFuncionario(Usuario usuario) async {
     try {
-      if (await verificarCpfExistente(usuario.cpf)) {
+      // Verificar se CPF já existe
+      if (await _verificarCpfExistente(usuario.cpf)) {
         return 'Erro: CPF já cadastrado';
       }
-      String? gerenteId = pegarIdUsuarioLogado();
+
+      // Verificar se há gerente logado
+      String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
       if (gerenteId == null) return 'Erro: Nenhum gerente logado';
 
       // Verificar se é gerente
-      DocumentSnapshot gerenteDoc = await _usuariosRef.doc(gerenteId).get();
-      if (!gerenteDoc.exists) return 'Erro: Gerente não encontrado';
-
-      Map<String, dynamic> dadosGerente =
-          gerenteDoc.data() as Map<String, dynamic>;
-
-      if (dadosGerente['cargo'] != 'Gerente') {
+      if (!await _validarGerente(gerenteId)) {
         return 'Erro: Apenas gerentes podem cadastrar funcionários';
       }
 
-      // Criar instância secundária do Firebase
-      FirebaseApp appSecundario = await Firebase.initializeApp(
-        name: 'appSecundario',
-        options: Firebase.app().options,
+      // Criar funcionário no Firebase Auth usando instância secundária
+      String funcionarioId = await _usuarioFirebase.criarUsuarioAuthSecundario(
+        usuario.email,
+        usuario.senha,
       );
 
-      FirebaseAuth authSecundaria = FirebaseAuth.instanceFor(
-        app: appSecundario,
-      );
-
-      // Cadastrar funcionário sem deslogar o gerente
-      UserCredential funcionarioCredential = await authSecundaria
-          .createUserWithEmailAndPassword(
-            email: usuario.email,
-            password: usuario.senha,
-          );
-
-      String funcionarioId = funcionarioCredential.user!.uid;
-
-      // Desloga da instância secundária e deleta
-      await authSecundaria.signOut();
-      await appSecundario.delete();
-
-      // Salvar funcionário na subcoleção do gerente
-      await _usuariosRef
-          .doc(gerenteId)
-          .collection('funcionarios')
-          .doc(funcionarioId)
-          .set({
-            'uid': funcionarioId,
-            'nome': usuario.nome,
-            'email': usuario.email,
-            'telefone': usuario.telefone,
-            'cargo': usuario.cargo,
-            'cpf': usuario.cpf,
-            'ativo': true,
-            'criadoEm': FieldValue.serverTimestamp(),
-          });
+      // Salvar funcionário no Firestore
+      await _usuarioFirebase.salvarFuncionario(gerenteId, funcionarioId, usuario);
 
       return 'Funcionário cadastrado com sucesso';
     } catch (e) {
@@ -108,108 +59,68 @@ class UsuarioController {
     }
   }
 
-  /// Listagem de funcionários
+  /// Listagem de funcionários ativos
   Stream<QuerySnapshot> listarFuncionariosAtivos() {
-    String? gerenteId = pegarIdUsuarioLogado();
+    String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
 
     if (gerenteId == null) {
       throw Exception('Nenhum gerente logado');
     }
 
-    return _usuariosRef
-        .doc(gerenteId)
-        .collection('funcionarios')
-        .where('ativo', isEqualTo: true)
-        .snapshots();
+    return _usuarioFirebase.listarFuncionariosAtivos(gerenteId);
   }
 
+  /// Listagem de funcionários inativos
   Stream<QuerySnapshot> listarFuncionariosInativos() {
-    String? gerenteId = pegarIdUsuarioLogado();
+    String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
 
     if (gerenteId == null) {
       throw Exception('Nenhum gerente logado');
     }
 
-    return _usuariosRef
-        .doc(gerenteId)
-        .collection('funcionarios')
-        .where('ativo', isEqualTo: false)
-        .snapshots();
+    return _usuarioFirebase.listarFuncionariosInativos(gerenteId);
   }
 
   /// Desativar funcionário
   Future<void> desativarFuncionario(String funcionarioId) async {
-    String? gerenteId = pegarIdUsuarioLogado();
+    String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
     if (gerenteId == null) throw Exception('Nenhum gerente logado');
 
-    await _usuariosRef
-        .doc(gerenteId)
-        .collection('funcionarios')
-        .doc(funcionarioId)
-        .update({'ativo': false});
+    await _usuarioFirebase.atualizarStatusFuncionario(gerenteId, funcionarioId, false);
   }
 
   /// Ativar funcionário
   Future<void> ativarFuncionario(String funcionarioId) async {
-    String? gerenteId = pegarIdUsuarioLogado();
+    String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
     if (gerenteId == null) throw Exception('Nenhum gerente logado');
 
-    await _usuariosRef
-        .doc(gerenteId)
-        .collection('funcionarios')
-        .doc(funcionarioId)
-        .update({'ativo': true});
+    await _usuarioFirebase.atualizarStatusFuncionario(gerenteId, funcionarioId, true);
   }
 
-  /// editar funcionário
+  /// Editar funcionário
   Future<String> editarFuncionario(Usuario usuario) async {
-    String? gerenteId = pegarIdUsuarioLogado();
+    String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
     if (gerenteId == null) return 'Erro: Nenhum gerente logado';
 
     try {
-      await _usuariosRef
-          .doc(gerenteId)
-          .collection('funcionarios')
-          .doc(usuario.uid)
-          .update({
-            'nome': usuario.nome,
-            'telefone': usuario.telefone,
-            'cargo': usuario.cargo,
-            'cpf': usuario.cpf,
-          });
+      await _usuarioFirebase.atualizarDadosFuncionario(gerenteId, usuario);
       return 'Funcionário editado com sucesso';
     } catch (e) {
       return 'Erro ao editar funcionário: ${e.toString()}';
     }
   }
 
-
-  Future<bool> verificarCpfExistente(String cpf) async {
-    final _firestore = FirebaseFirestore.instance;
-
+  /// Verificar se CPF já existe
+  Future<bool> _verificarCpfExistente(String cpf) async {
     try {
-      final gerentesCpf = await _firestore
-          .collection('Gerentes')
-          .where('cpf', isEqualTo: cpf)
-          .get();
-
-      if (gerentesCpf.docs.isNotEmpty) {
+      // Verificar nos gerentes
+      if (await _usuarioFirebase.verificarCpfExistenteGerentes(cpf)) {
         return true;
       }
 
-      final gerentesSnapshot = await _firestore.collection('Gerentes').get();
-
-      for (var gerenteDoc in gerentesSnapshot.docs) {
-        final funcionariosSnapshot = await _firestore
-            .collection('Gerentes')
-            .doc(gerenteDoc.id)
-            .collection('funcionarios')
-            .where('cpf', isEqualTo: cpf)
-            .get();
-
-        if (funcionariosSnapshot.docs.isNotEmpty) {
-          return true;
-        }
+      // Verificar nos funcionários
+      if (await _usuarioFirebase.verificarCpfExistenteFuncionarios(cpf)) {
+        return true;
       }
 
       return false;
@@ -219,7 +130,18 @@ class UsuarioController {
     }
   }
 
+  /// Validar se o usuário é gerente
+  Future<bool> _validarGerente(String gerenteId) async {
+    try {
+      DocumentSnapshot gerenteDoc = await _usuarioFirebase.buscarGerente(gerenteId);
 
+      if (!gerenteDoc.exists) return false;
 
-
+      Map<String, dynamic> dadosGerente = gerenteDoc.data() as Map<String, dynamic>;
+      return dadosGerente['cargo'] == 'Gerente';
+    } catch (e) {
+      print('Erro ao validar gerente: $e');
+      return false;
+    }
+  }
 }
