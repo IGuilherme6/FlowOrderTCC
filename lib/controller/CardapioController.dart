@@ -1,56 +1,57 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/ItemCardapio.dart';
+import '../firebase/CardapioFirebase.dart';
+import '../models/Cardapio.dart';
 
 class CardapioController {
-  final FirebaseFirestore _firestore;
-  final CollectionReference _cardapioRef;
 
-  CardapioController({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance,
-      _cardapioRef = (firestore ?? FirebaseFirestore.instance).collection(
-        'cardapio',
-      );
+  final CardapioFirebase _cardapioFirebase = CardapioFirebase();
 
-  Future<void> adicionarItem(ItemCardapio item) async {
-    await _cardapioRef.add({
-      'nome': item.nome,
-      'descricao': item.descricao,
-      'preco': item.preco,
-    });
-  }
+  Future<String> cadastrarCardapio(Cardapio cardapio) async {
+    try {
+      String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+      if (userId == null) {
+        throw Exception('Erro: Nenhum Gerente logado');
+      }
 
-  Future<List<ItemCardapio>> buscarTodosItens() async {
-    QuerySnapshot querySnapshot = await _cardapioRef.get();
-    return querySnapshot.docs.map((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      return ItemCardapio()
-        ..nome = data['nome']
-        ..descricao = data['descricao']
-        ..preco = data['preco'];
-    }).toList();
-  }
+      // Aplicar regra de negócio: nome padrão se não informado
+      if (cardapio.nome.trim().isEmpty ||
+          cardapio.descricao.trim().isEmpty ||
+          cardapio.preco == null ||
+          !(cardapio.preco > 0)) {
+        throw Exception('Erro: Nome, descrição ou preço inválidos');
+      }
 
-  Future<void> atualizarItem(String id, ItemCardapio item) async {
-    await _cardapioRef.doc(id).update({
-      'nome': item.nome,
-      'descricao': item.descricao,
-      'preco': item.preco,
-    });
-  }
 
-  Future<void> removerItem(String id) async {
-    await _cardapioRef.doc(id).delete();
-  }
+      // Adicionar cardápio e capturar o ID
+      String cardapioId = await _cardapioFirebase.adicionarCardapio(userId, cardapio);
+      cardapio.uid = cardapioId;
 
-  Future<ItemCardapio?> buscarItemPorId(String id) async {
-    final doc = await _cardapioRef.doc(id).get();
-    if (doc.exists) {
-      final data = doc.data() as Map<String, dynamic>;
-      return ItemCardapio()
-        ..nome = data['nome']
-        ..descricao = data['descricao']
-        ..preco = data['preco'];
+      return 'Cardápio cadastrado com sucesso';
+    } catch (e) {
+      throw Exception('Erro ao cadastrar cardápio: ${e.toString()}');
     }
-    return null;
   }
+
+  Future<List<Cardapio>> buscarCardapiosDoGerente() async {
+    String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+    if (userId == null) {
+      throw Exception('Erro: Nenhum Gerente logado');
+    }
+
+    try {
+      QuerySnapshot snapshot = await _cardapioFirebase.buscarCardapios(userId);
+      return snapshot.docs.map((doc) {
+        Cardapio cardapio = Cardapio();
+        cardapio.nome = doc['nome'];
+        cardapio.descricao = doc['descricao'];
+        cardapio.preco = doc['preco'];
+        cardapio.uid = doc['uid'];
+        return cardapio;
+      }).toList();
+    } catch (e) {
+      throw Exception('Erro ao buscar cardápios: ${e.toString()}');
+    }
+  }
+
+
 }
