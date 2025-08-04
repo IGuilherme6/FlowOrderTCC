@@ -24,6 +24,8 @@ class _TelaCardapioState extends State<TelaCardapio> {
   bool _loading = true;
   String _busca = '';
 
+  List<String> categorias = ['Bebida', 'Prato', 'Lanche', 'Outros'];
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +60,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
     final nomeController = TextEditingController();
     final descricaoController = TextEditingController();
     final precoController = TextEditingController();
+    String? categoriaSelecionada = 'Outros';
 
     showDialog(
       context: context,
@@ -69,16 +72,66 @@ class _TelaCardapioState extends State<TelaCardapio> {
           content: SingleChildScrollView(
             child: Column(
               children: [
-                TextField(controller: nomeController, decoration: InputDecoration(labelText: 'Nome', labelStyle: TextStyle(color: textGray), filled: true, fillColor: backgroundBlack), style: TextStyle(color: textWhite)),
+                TextField(
+                  controller: nomeController,
+                  decoration: InputDecoration(
+                    labelText: 'Nome',
+                    labelStyle: TextStyle(color: textGray),
+                    filled: true,
+                    fillColor: backgroundBlack,
+                  ),
+                  style: TextStyle(color: textWhite),
+                ),
                 SizedBox(height: 12),
-                TextField(controller: descricaoController, decoration: InputDecoration(labelText: 'Descrição', labelStyle: TextStyle(color: textGray), filled: true, fillColor: backgroundBlack), style: TextStyle(color: textWhite)),
+                TextField(
+                  controller: descricaoController,
+                  decoration: InputDecoration(
+                    labelText: 'Descrição',
+                    labelStyle: TextStyle(color: textGray),
+                    filled: true,
+                    fillColor: backgroundBlack,
+                  ),
+                  style: TextStyle(color: textWhite),
+                ),
                 SizedBox(height: 12),
-                TextField(controller: precoController, keyboardType: TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: 'Preço (R\$)', labelStyle: TextStyle(color: textGray), filled: true, fillColor: backgroundBlack), style: TextStyle(color: textWhite)),
+                TextField(
+                  controller: precoController,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'Preço (R\$)',
+                    labelStyle: TextStyle(color: textGray),
+                    filled: true,
+                    fillColor: backgroundBlack,
+                  ),
+                  style: TextStyle(color: textWhite),
+                ),
+                SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: categoriaSelecionada,
+                  dropdownColor: backgroundBlack,
+                  style: TextStyle(color: textWhite),
+                  decoration: InputDecoration(
+                    labelText: 'Categoria',
+                    labelStyle: TextStyle(color: textGray),
+                    filled: true,
+                    fillColor: backgroundBlack,
+                  ),
+                  items: categorias.map((cat) {
+                    return DropdownMenuItem(
+                      value: cat,
+                      child: Text(cat, style: TextStyle(color: textWhite)),
+                    );
+                  }).toList(),
+                  onChanged: (value) => categoriaSelecionada = value,
+                ),
               ],
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar', style: TextStyle(color: Colors.grey))),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
             ElevatedButton(
               onPressed: () async {
                 try {
@@ -86,10 +139,12 @@ class _TelaCardapioState extends State<TelaCardapio> {
                   final descricao = descricaoController.text.trim();
                   final preco = double.tryParse(precoController.text.trim());
 
-                  final novoCardapio = Cardapio();
-                  novoCardapio.nome = nome.isNotEmpty ? nome : 'Item sem nome';
-                  novoCardapio.descricao = descricao.isNotEmpty ? descricao : 'Descrição não informada';
-                  novoCardapio.preco = preco ?? 0.0;
+                  final novoCardapio = Cardapio(
+                    nome: nome.isNotEmpty ? nome : 'Item sem nome',
+                    descricao: descricao.isNotEmpty ? descricao : 'Descrição não informada',
+                    preco: preco ?? 0.0,
+                    categoria: categoriaSelecionada ?? 'Outros',
+                  );
 
                   await _controller.cadastrarCardapio(novoCardapio);
 
@@ -113,6 +168,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
     final nomeController = TextEditingController(text: cardapio.nome);
     final descricaoController = TextEditingController(text: cardapio.descricao);
     final precoController = TextEditingController(text: cardapio.preco.toString());
+    String? categoriaSelecionada = cardapio.categoria;
 
     showDialog(
       context: context,
@@ -121,13 +177,37 @@ class _TelaCardapioState extends State<TelaCardapio> {
           backgroundColor: cardBlack,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Text('Editar Item', style: TextStyle(color: textWhite)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nomeController, style: TextStyle(color: textWhite)),
-              TextField(controller: descricaoController, style: TextStyle(color: textWhite)),
-              TextField(controller: precoController, style: TextStyle(color: textWhite), keyboardType: TextInputType.numberWithOptions(decimal: true)),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(controller: nomeController, style: TextStyle(color: textWhite)),
+                TextField(controller: descricaoController, style: TextStyle(color: textWhite)),
+                TextField(
+                  controller: precoController,
+                  style: TextStyle(color: textWhite),
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                ),
+                SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: categoriaSelecionada,
+                  dropdownColor: backgroundBlack,
+                  style: TextStyle(color: textWhite),
+                  decoration: InputDecoration(
+                    labelText: 'Categoria',
+                    labelStyle: TextStyle(color: textGray),
+                    filled: true,
+                    fillColor: backgroundBlack,
+                  ),
+                  items: categorias.map((cat) {
+                    return DropdownMenuItem(
+                      value: cat,
+                      child: Text(cat, style: TextStyle(color: textWhite)),
+                    );
+                  }).toList(),
+                  onChanged: (value) => categoriaSelecionada = value,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar')),
@@ -137,6 +217,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
                   cardapio.nome = nomeController.text.trim();
                   cardapio.descricao = descricaoController.text.trim();
                   cardapio.preco = double.tryParse(precoController.text.trim()) ?? 0.0;
+                  cardapio.categoria = categoriaSelecionada ?? 'Outros';
 
                   await _controller.atualizarCardapio(cardapio);
                   Navigator.pop(context);
@@ -194,6 +275,11 @@ class _TelaCardapioState extends State<TelaCardapio> {
 
   @override
   Widget build(BuildContext context) {
+    final Map<String, List<Cardapio>> agrupadoPorCategoria = {};
+    for (var item in _filtrados) {
+      agrupadoPorCategoria.putIfAbsent(item.categoria, () => []).add(item);
+    }
+
     return Scaffold(
       backgroundColor: backgroundBlack,
       body: Row(
@@ -242,48 +328,61 @@ class _TelaCardapioState extends State<TelaCardapio> {
                       ? Center(child: CircularProgressIndicator())
                       : _filtrados.isEmpty
                       ? Text('Nenhum item encontrado.', style: TextStyle(color: textGray))
-                      : LayoutBuilder(
-                    builder: (context, constraints) {
-                      return Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: _filtrados.map((cardapio) {
-                          return Container(
-                            width: constraints.maxWidth > 900 ? constraints.maxWidth / 3 - 20 : constraints.maxWidth,
-                            padding: EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: cardBlack,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: borderGray),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(cardapio.nome, style: TextStyle(color: textWhite, fontSize: 20, fontWeight: FontWeight.bold)),
-                                SizedBox(height: 8),
-                                Text(cardapio.descricao, style: TextStyle(color: textGray)),
-                                SizedBox(height: 8),
-                                Text('R\$ ${cardapio.preco.toStringAsFixed(2)}', style: TextStyle(color: textWhite)),
-                                SizedBox(height: 8),
-                                Text(cardapio.ativo ? 'Ativo' : 'Suspenso', style: TextStyle(color: cardapio.ativo ? Colors.green : Colors.red)),
-                                SizedBox(height: 16),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    IconButton(icon: Icon(Icons.edit, color: lightRed), onPressed: () => _mostrarDialogEditarItem(cardapio)),
-                                    IconButton(
-                                      icon: Icon(cardapio.ativo ? Icons.block : Icons.check_circle, color: Colors.amber),
-                                      onPressed: () => _alternarSuspensao(cardapio),
+                      : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: agrupadoPorCategoria.entries.map((entry) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(entry.key, style: TextStyle(color: textWhite, fontSize: 24, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 12),
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              return Wrap(
+                                spacing: 16,
+                                runSpacing: 16,
+                                children: entry.value.map((cardapio) {
+                                  return Container(
+                                    width: constraints.maxWidth > 900 ? constraints.maxWidth / 3 - 20 : constraints.maxWidth,
+                                    padding: EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: cardBlack,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: borderGray),
                                     ),
-                                    IconButton(icon: Icon(Icons.delete, color: Colors.red), onPressed: () => _mostrarDialogExcluirItem(cardapio.uid)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(cardapio.nome, style: TextStyle(color: textWhite, fontSize: 20, fontWeight: FontWeight.bold)),
+                                        SizedBox(height: 8),
+                                        Text(cardapio.descricao, style: TextStyle(color: textGray)),
+                                        SizedBox(height: 8),
+                                        Text('R\$ ${cardapio.preco.toStringAsFixed(2)}', style: TextStyle(color: textWhite)),
+                                        SizedBox(height: 8),
+                                        Text(cardapio.ativo ? 'Ativo' : 'Suspenso', style: TextStyle(color: cardapio.ativo ? Colors.green : Colors.red)),
+                                        SizedBox(height: 16),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.end,
+                                          children: [
+                                            IconButton(icon: Icon(Icons.edit, color: lightRed), onPressed: () => _mostrarDialogEditarItem(cardapio)),
+                                            IconButton(
+                                              icon: Icon(cardapio.ativo ? Icons.block : Icons.check_circle, color: Colors.amber),
+                                              onPressed: () => _alternarSuspensao(cardapio),
+                                            ),
+                                            IconButton(icon: Icon(Icons.delete, color: Colors.red), onPressed: () => _mostrarDialogExcluirItem(cardapio.uid)),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            },
+                          ),
+                          SizedBox(height: 24),
+                        ],
                       );
-                    },
+                    }).toList(),
                   ),
                 ],
               ),

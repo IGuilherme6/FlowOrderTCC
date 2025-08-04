@@ -1,22 +1,38 @@
 class Cardapio {
-  late String _nome;
-  late String _descricao;
-  late double _preco;
-  late String _uid;
-  late bool _ativo;
+  String uid;
+  String nome;
+  String descricao;
+  double preco;
+  bool ativo;
+  String categoria;
 
-  String get nome => _nome;
-  set nome(String value) => _nome = value;
+  Cardapio({
+    this.uid = '',
+    required this.nome,
+    required this.descricao,
+    required this.preco,
+    this.ativo = true,
+    this.categoria = 'Outros',
+  });
 
-  String get descricao => _descricao;
-  set descricao(String value) => _descricao = value;
+  Map<String, dynamic> toMap() {
+    return {
+      'nome': nome,
+      'descricao': descricao,
+      'preco': preco,
+      'ativo': ativo,
+      'categoria': categoria,
+    };
+  }
 
-  double get preco => _preco;
-  set preco(double value) => _preco = value;
-
-  String get uid => _uid;
-  set uid(String value) => _uid = value;
-
-  bool get ativo => _ativo;
-  set ativo(bool value) => _ativo = value;
+  factory Cardapio.fromMap(String id, Map<String, dynamic> data) {
+    return Cardapio(
+      uid: id,
+      nome: data['nome'] ?? '',
+      descricao: data['descricao'] ?? '',
+      preco: (data['preco'] ?? 0).toDouble(),
+      ativo: data['ativo'] ?? true,
+      categoria: data['categoria'] ?? 'Outros',
+    );
+  }
 }

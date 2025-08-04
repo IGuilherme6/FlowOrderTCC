@@ -19,6 +19,7 @@ class CardapioFirebase {
       'nome': cardapio.nome,
       'descricao': cardapio.descricao,
       'preco': cardapio.preco,
+      'categoria': cardapio.categoria, // Adicionando categoria
       'ativo': true,
       'gerenteId': gerenteId,
       'criadoEm': FieldValue.serverTimestamp(),
@@ -32,7 +33,8 @@ class CardapioFirebase {
         .collection('Gerentes')
         .doc(gerenteId)
         .collection('Cardapios')
-        .orderBy('nome')
+        .orderBy('categoria') // Ordena por categoria primeiro
+        .orderBy('nome') // Depois ordena por nome
         .get();
   }
 
@@ -46,6 +48,7 @@ class CardapioFirebase {
       'nome': cardapio.nome,
       'descricao': cardapio.descricao,
       'preco': cardapio.preco,
+      'categoria': cardapio.categoria, // Permite atualizar a categoria
     });
   }
 
