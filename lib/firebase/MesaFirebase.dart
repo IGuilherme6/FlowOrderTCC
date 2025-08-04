@@ -11,7 +11,7 @@ class MesaFirebase {
     return user?.uid;
   }
 
-  /// Adicionar mesa no Firestore
+  /// Adicionar mesa
   Future<String> adicionarMesa(String gerenteId, Mesa mesa) async {
     DocumentReference docRef = await _firestore
         .collection('Gerentes')
@@ -24,13 +24,11 @@ class MesaFirebase {
       'criadoEm': FieldValue.serverTimestamp(),
     });
 
-    // Atualizar o documento com seu próprio ID
     await docRef.update({'uid': docRef.id});
-
     return docRef.id;
   }
 
-  /// Buscar mesas do gerente
+  /// Buscar mesas (snapshot único)
   Future<QuerySnapshot> buscarMesas(String gerenteId) async {
     return await _firestore
         .collection('Gerentes')
@@ -40,7 +38,7 @@ class MesaFirebase {
         .get();
   }
 
-  /// Stream para escutar mudanças nas mesas
+  /// Stream de mesas (tempo real)
   Stream<QuerySnapshot> streamMesas(String gerenteId) {
     return _firestore
         .collection('Gerentes')
@@ -74,7 +72,7 @@ class MesaFirebase {
     });
   }
 
-  /// Buscar mesa específica por UID
+  /// Buscar mesa específica
   Future<DocumentSnapshot> buscarMesaPorUid(String gerenteId, String mesaUid) async {
     return await _firestore
         .collection('Gerentes')
@@ -84,21 +82,22 @@ class MesaFirebase {
         .get();
   }
 
-  /// Converter DocumentSnapshot para Mesa
+  /// Converter DocumentSnapshot em Mesa
   Mesa documentParaMesa(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    Mesa mesa = Mesa();
-    mesa.uid = doc.id;
-    mesa.nome = data['nome'];
-    mesa.numero = data['numero'];
-    return mesa;
+    return Mesa(
+      uid: doc.id,
+      nome: data['nome'] ?? "Mesa ${data['numero']}",
+      numero: data['numero'] ?? 0,
+    );
   }
 
-  /// Converter QuerySnapshot para List<Mesa>
+  /// Converter QuerySnapshot em lista de mesas
   List<Mesa> querySnapshotParaMesas(QuerySnapshot snapshot) {
     return snapshot.docs.map((doc) => documentParaMesa(doc)).toList();
   }
 
+  /// Verificar se já existe mesa com mesmo número
   Future<bool> verificarMesaExistente(String gerenteId, int numero) async {
     QuerySnapshot snapshot = await _firestore
         .collection('Gerentes')
@@ -106,9 +105,6 @@ class MesaFirebase {
         .collection('Mesas')
         .where('numero', isEqualTo: numero)
         .get();
-    if (snapshot.docs.isNotEmpty) {
-      return true; // Mesa já existe
-    }
-    return false; // Mesa não existe
+    return snapshot.docs.isNotEmpty;
   }
 }
