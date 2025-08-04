@@ -54,6 +54,144 @@ class _TelaCardapioState extends State<TelaCardapio> {
     });
   }
 
+  void _mostrarDialogAdicionarItem() {
+    final nomeController = TextEditingController();
+    final descricaoController = TextEditingController();
+    final precoController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: cardBlack,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Text('Adicionar Item', style: TextStyle(color: textWhite)),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(controller: nomeController, decoration: InputDecoration(labelText: 'Nome', labelStyle: TextStyle(color: textGray), filled: true, fillColor: backgroundBlack), style: TextStyle(color: textWhite)),
+                SizedBox(height: 12),
+                TextField(controller: descricaoController, decoration: InputDecoration(labelText: 'Descrição', labelStyle: TextStyle(color: textGray), filled: true, fillColor: backgroundBlack), style: TextStyle(color: textWhite)),
+                SizedBox(height: 12),
+                TextField(controller: precoController, keyboardType: TextInputType.numberWithOptions(decimal: true), decoration: InputDecoration(labelText: 'Preço (R\$)', labelStyle: TextStyle(color: textGray), filled: true, fillColor: backgroundBlack), style: TextStyle(color: textWhite)),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar', style: TextStyle(color: Colors.grey))),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  final nome = nomeController.text.trim();
+                  final descricao = descricaoController.text.trim();
+                  final preco = double.tryParse(precoController.text.trim());
+
+                  final novoCardapio = Cardapio();
+                  novoCardapio.nome = nome.isNotEmpty ? nome : 'Item sem nome';
+                  novoCardapio.descricao = descricao.isNotEmpty ? descricao : 'Descrição não informada';
+                  novoCardapio.preco = preco ?? 0.0;
+
+                  await _controller.cadastrarCardapio(novoCardapio);
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Item adicionado com sucesso!')));
+                  _carregarCardapios();
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                }
+              },
+              child: Text('Salvar'),
+              style: ElevatedButton.styleFrom(backgroundColor: primaryRed),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _mostrarDialogEditarItem(Cardapio cardapio) {
+    final nomeController = TextEditingController(text: cardapio.nome);
+    final descricaoController = TextEditingController(text: cardapio.descricao);
+    final precoController = TextEditingController(text: cardapio.preco.toString());
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: cardBlack,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Text('Editar Item', style: TextStyle(color: textWhite)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nomeController, style: TextStyle(color: textWhite)),
+              TextField(controller: descricaoController, style: TextStyle(color: textWhite)),
+              TextField(controller: precoController, style: TextStyle(color: textWhite), keyboardType: TextInputType.numberWithOptions(decimal: true)),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  cardapio.nome = nomeController.text.trim();
+                  cardapio.descricao = descricaoController.text.trim();
+                  cardapio.preco = double.tryParse(precoController.text.trim()) ?? 0.0;
+
+                  await _controller.atualizarCardapio(cardapio);
+                  Navigator.pop(context);
+                  _carregarCardapios();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Item atualizado com sucesso!')));
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                }
+              },
+              child: Text('Salvar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _mostrarDialogExcluirItem(String cardapioId) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Confirmar exclusão'),
+          content: Text('Deseja realmente excluir este item?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar')),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await _controller.excluirCardapio(cardapioId);
+                  Navigator.pop(context);
+                  _carregarCardapios();
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Item excluído com sucesso!')));
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                }
+              },
+              child: Text('Excluir'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _alternarSuspensao(Cardapio cardapio) async {
+    try {
+      await _controller.suspenderCardapio(cardapio.uid, !cardapio.ativo);
+      _carregarCardapios();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(cardapio.ativo ? 'Item suspenso' : 'Item reativado')));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,14 +205,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Gerenciamento de Cardápio',
-                    style: TextStyle(
-                      color: textWhite,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text('Gerenciamento de Cardápio', style: TextStyle(color: textWhite, fontSize: 32, fontWeight: FontWeight.bold)),
                   SizedBox(height: 24),
                   Row(
                     children: [
@@ -88,10 +219,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
                             prefixIcon: Icon(Icons.search, color: textGray),
                             filled: true,
                             fillColor: cardBlack,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: borderGray),
-                            ),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderGray)),
                           ),
                         ),
                       ),
@@ -113,10 +241,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
                   _loading
                       ? Center(child: CircularProgressIndicator())
                       : _filtrados.isEmpty
-                      ? Text(
-                    'Nenhum item encontrado.',
-                    style: TextStyle(color: textGray),
-                  )
+                      ? Text('Nenhum item encontrado.', style: TextStyle(color: textGray))
                       : LayoutBuilder(
                     builder: (context, constraints) {
                       return Wrap(
@@ -124,9 +249,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
                         runSpacing: 16,
                         children: _filtrados.map((cardapio) {
                           return Container(
-                            width: constraints.maxWidth > 900
-                                ? constraints.maxWidth / 3 - 20
-                                : constraints.maxWidth,
+                            width: constraints.maxWidth > 900 ? constraints.maxWidth / 3 - 20 : constraints.maxWidth,
                             padding: EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: cardBlack,
@@ -136,46 +259,23 @@ class _TelaCardapioState extends State<TelaCardapio> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  cardapio.nome,
-                                  style: TextStyle(
-                                    color: textWhite,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                                Text(cardapio.nome, style: TextStyle(color: textWhite, fontSize: 20, fontWeight: FontWeight.bold)),
                                 SizedBox(height: 8),
-                                Text(
-                                  cardapio.descricao,
-                                  style: TextStyle(color: textGray),
-                                ),
+                                Text(cardapio.descricao, style: TextStyle(color: textGray)),
                                 SizedBox(height: 8),
-                                Text(
-                                  'R\$ ${cardapio.preco.toStringAsFixed(2)}',
-                                  style: TextStyle(color: textWhite),
-                                ),
+                                Text('R\$ ${cardapio.preco.toStringAsFixed(2)}', style: TextStyle(color: textWhite)),
+                                SizedBox(height: 8),
+                                Text(cardapio.ativo ? 'Ativo' : 'Suspenso', style: TextStyle(color: cardapio.ativo ? Colors.green : Colors.red)),
                                 SizedBox(height: 16),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
+                                    IconButton(icon: Icon(Icons.edit, color: lightRed), onPressed: () => _mostrarDialogEditarItem(cardapio)),
                                     IconButton(
-                                      icon: Icon(Icons.edit, color: lightRed),
-                                      onPressed: () {
-                                        // Editar
-                                      },
+                                      icon: Icon(cardapio.ativo ? Icons.block : Icons.check_circle, color: Colors.amber),
+                                      onPressed: () => _alternarSuspensao(cardapio),
                                     ),
-                                    IconButton(
-                                      icon: Icon(Icons.block, color: Colors.amber),
-                                      onPressed: () {
-                                        // Suspender
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: Icon(Icons.delete, color: Colors.red),
-                                      onPressed: () {
-                                        // Excluir
-                                      },
-                                    ),
+                                    IconButton(icon: Icon(Icons.delete, color: Colors.red), onPressed: () => _mostrarDialogExcluirItem(cardapio.uid)),
                                   ],
                                 ),
                               ],
@@ -191,95 +291,6 @@ class _TelaCardapioState extends State<TelaCardapio> {
           ),
         ],
       ),
-    );
-  }
-  void _mostrarDialogAdicionarItem() {
-    final nomeController = TextEditingController();
-    final descricaoController = TextEditingController();
-    final precoController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: cardBlack,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Text('Adicionar Item', style: TextStyle(color: textWhite)),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextField(
-                  controller: nomeController,
-                  decoration: InputDecoration(
-                    labelText: 'Nome',
-                    labelStyle: TextStyle(color: textGray),
-                    filled: true,
-                    fillColor: backgroundBlack,
-                  ),
-                  style: TextStyle(color: textWhite),
-                ),
-                SizedBox(height: 12),
-                TextField(
-                  controller: descricaoController,
-                  decoration: InputDecoration(
-                    labelText: 'Descrição',
-                    labelStyle: TextStyle(color: textGray),
-                    filled: true,
-                    fillColor: backgroundBlack,
-                  ),
-                  style: TextStyle(color: textWhite),
-                ),
-                SizedBox(height: 12),
-                TextField(
-                  controller: precoController,
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: 'Preço (R\$)',
-                    labelStyle: TextStyle(color: textGray),
-                    filled: true,
-                    fillColor: backgroundBlack,
-                  ),
-                  style: TextStyle(color: textWhite),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancelar', style: TextStyle(color: Colors.grey)),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                try {
-                  final nome = nomeController.text.trim();
-                  final descricao = descricaoController.text.trim();
-                  final preco = double.tryParse(precoController.text.trim());
-
-                  final novoCardapio = Cardapio();
-                  novoCardapio.nome = nome.isNotEmpty ? nome : 'Item sem nome';
-                  novoCardapio.descricao = descricao.isNotEmpty ? descricao : 'Descrição não informada';
-                  novoCardapio.preco = preco ?? 0.0;
-
-                  await _controller.cadastrarCardapio(novoCardapio);
-
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Item adicionado com sucesso!'))
-                  );
-                  _carregarCardapios(); // Recarrega lista
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(e.toString()))
-                  );
-                }
-              },
-              child: Text('Salvar'),
-              style: ElevatedButton.styleFrom(backgroundColor: primaryRed),
-            ),
-          ],
-        );
-      },
     );
   }
 }

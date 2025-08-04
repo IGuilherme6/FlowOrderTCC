@@ -14,10 +14,12 @@ class CardapioFirebase {
     DocumentReference docRef = await _firestore
         .collection('Gerentes')
         .doc(gerenteId)
-        .collection('Cardapios').add({
+        .collection('Cardapios')
+        .add({
       'nome': cardapio.nome,
       'descricao': cardapio.descricao,
       'preco': cardapio.preco,
+      'ativo': true,
       'gerenteId': gerenteId,
       'criadoEm': FieldValue.serverTimestamp(),
     });
@@ -34,4 +36,34 @@ class CardapioFirebase {
         .get();
   }
 
+  Future<void> atualizarCardapio(String gerenteId, Cardapio cardapio) async {
+    await _firestore
+        .collection('Gerentes')
+        .doc(gerenteId)
+        .collection('Cardapios')
+        .doc(cardapio.uid)
+        .update({
+      'nome': cardapio.nome,
+      'descricao': cardapio.descricao,
+      'preco': cardapio.preco,
+    });
+  }
+
+  Future<void> excluirCardapio(String gerenteId, String cardapioId) async {
+    await _firestore
+        .collection('Gerentes')
+        .doc(gerenteId)
+        .collection('Cardapios')
+        .doc(cardapioId)
+        .delete();
+  }
+
+  Future<void> suspenderCardapio(String gerenteId, String cardapioId, bool ativo) async {
+    await _firestore
+        .collection('Gerentes')
+        .doc(gerenteId)
+        .collection('Cardapios')
+        .doc(cardapioId)
+        .update({'ativo': ativo});
+  }
 }
