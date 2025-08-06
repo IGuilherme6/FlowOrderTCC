@@ -6,21 +6,35 @@ class PedidoController {
   late final CollectionReference _pedidosRef;
 
   PedidoController({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance {
+      : _firestore = firestore ?? FirebaseFirestore.instance {
     _pedidosRef = _firestore.collection('pedidos');
   }
 
+  /// Cadastra um novo pedido no Firestore
   Future<void> cadastrarPedido(Pedido pedido) async {
-    await _pedidosRef.add({
-      'horario': pedido.horario,
-      'status':
-          Pedido.status, // Aqui status precisa ser static ou acessível assim
-      //'mesa': pedido.mesa.numero,
-      'itens': pedido.itens.map((item) => item.nome).toList(),
-    });
+    try {
+      DocumentReference docRef = await _pedidosRef.add(pedido.toMap());
+      await docRef.update({'uid': docRef.id});
+    } catch (e) {
+      throw Exception('Erro ao cadastrar pedido: $e');
+    }
   }
 
-  Future<void> atualizarStatusPedido(String id, String status) async {
-    await _pedidosRef.doc(id).update({'status': status});
+  /// Atualiza o status de um pedido pelo UID
+  Future<void> atualizarStatusPedido(String pedidoId, String novoStatus) async {
+    try {
+      await _pedidosRef.doc(pedidoId).update({'status': novoStatus});
+    } catch (e) {
+      throw Exception('Erro ao atualizar status do pedido: $e');
+    }
+  }
+
+  /// Ouve pedidos em tempo real
+  Stream<List<Pedido>> ouvirPedidosTempoReal() {
+    return _pedidosRef.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return Pedido.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+    });
   }
 }
