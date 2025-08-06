@@ -6,6 +6,7 @@ import 'package:floworder/view/TelaPedidos.dart';
 import 'package:floworder/view/TelaRelatorios.dart';
 import 'package:floworder/view/Tela_CadastroUsuario.dart';
 
+import '../auxiliar/Cores.dart';
 import 'TelaMesa.dart';
 
 class Barralateral extends StatelessWidget {
@@ -13,32 +14,22 @@ class Barralateral extends StatelessWidget {
 
   const Barralateral({Key? key, required this.currentRoute}) : super(key: key);
 
-  // Cores definidas
-  static const Color primaryRed = Color(0xFFDC2626);
-  static const Color darkRed = Color(0xFF991B1B);
-  static const Color lightRed = Color(0xFFEF4444);
-  static const Color backgroundBlack = Color(0xFF111827);
-  static const Color cardBlack = Color(0xFF1F2937);
-  static const Color textWhite = Color(0xFFF9FAFB);
-  static const Color textGray = Color(0xFF9CA3AF);
-  static const Color borderGray = Color(0xFF374151);
-
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 250,
       height: double.infinity,
-      color: cardBlack,
+      color: Cores.cardBlack,
       child: Column(
         children: [
           // Header
           Container(
             padding: EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: darkRed,
+              color: Cores.darkRed,
               boxShadow: [
                 BoxShadow(
-                  color: primaryRed.withOpacity(0.3),
+                  color: Cores.primaryRed.withOpacity(0.3),
                   blurRadius: 5,
                   offset: Offset(0, 5),
                 ),
@@ -169,15 +160,15 @@ class Barralateral extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: isActive ? primaryRed : Colors.transparent,
+        color: isActive ? Cores.primaryRed : Colors.transparent,
         borderRadius: BorderRadius.circular(6),
       ),
       child: ListTile(
-        leading: Icon(icon, color: isActive ? textWhite : textGray, size: 20),
+        leading: Icon(icon, color: isActive ? Cores.textWhite : Cores.textGray, size: 20),
         title: Text(
           title,
           style: TextStyle(
-            color: isActive ? textWhite : textGray,
+            color: isActive ? Cores.textWhite : Cores.textGray,
             fontSize: 16,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
           ),

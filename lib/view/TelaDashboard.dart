@@ -2,25 +2,19 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:floworder/view/BarraLateral.dart';
 
+import '../auxiliar/Cores.dart';
+
 class TelaDashboard extends StatefulWidget {
   @override
   State<TelaDashboard> createState() => _TelaDashboardState();
 }
 
 class _TelaDashboardState extends State<TelaDashboard> {
-  static const Color primaryRed = Color(0xFFDC2626);
-  static const Color darkRed = Color(0xFF991B1B);
-  static const Color lightRed = Color(0xFFEF4444);
-  static const Color backgroundBlack = Color(0xFF111827);
-  static const Color cardBlack = Color(0xFF1F2937);
-  static const Color textWhite = Color(0xFFF9FAFB);
-  static const Color textGray = Color(0xFF9CA3AF);
-  static const Color borderGray = Color(0xFF374151);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundBlack,
+      backgroundColor: Cores.backgroundBlack,
       body: Row(
         children: [
           // Barra lateral
@@ -34,7 +28,7 @@ class _TelaDashboardState extends State<TelaDashboard> {
                   Text(
                     'Dashboard',
                     style: TextStyle(
-                      color: textWhite,
+                      color: Cores.textWhite,
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
                     ),
@@ -46,7 +40,7 @@ class _TelaDashboardState extends State<TelaDashboard> {
                     child: Text(
                       'Implementar futuramente',
                       style: TextStyle(
-                        color: textGray,
+                        color: Cores.textGray,
                         fontSize: 18,
                         fontStyle: FontStyle.italic,
                       ),

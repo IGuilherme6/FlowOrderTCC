@@ -3,20 +3,14 @@ import 'package:floworder/controller/CardapioController.dart';
 import 'package:floworder/models/Cardapio.dart';
 import 'package:floworder/view/BarraLateral.dart';
 
+import '../auxiliar/Cores.dart';
+
 class TelaCardapio extends StatefulWidget {
   @override
   State<TelaCardapio> createState() => _TelaCardapioState();
 }
 
 class _TelaCardapioState extends State<TelaCardapio> {
-  static const Color primaryRed = Color(0xFFDC2626);
-  static const Color darkRed = Color(0xFF991B1B);
-  static const Color lightRed = Color(0xFFEF4444);
-  static const Color backgroundBlack = Color(0xFF111827);
-  static const Color cardBlack = Color(0xFF1F2937);
-  static const Color textWhite = Color(0xFFF9FAFB);
-  static const Color textGray = Color(0xFF9CA3AF);
-  static const Color borderGray = Color(0xFF374151);
 
   final CardapioController _controller = CardapioController();
   List<Cardapio> _cardapios = [];
@@ -66,9 +60,9 @@ class _TelaCardapioState extends State<TelaCardapio> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: cardBlack,
+          backgroundColor: Cores.cardBlack,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Text('Adicionar Item', style: TextStyle(color: textWhite)),
+          title: Text('Adicionar Item', style: TextStyle(color: Cores.textWhite)),
           content: SingleChildScrollView(
             child: Column(
               children: [
@@ -76,22 +70,22 @@ class _TelaCardapioState extends State<TelaCardapio> {
                   controller: nomeController,
                   decoration: InputDecoration(
                     labelText: 'Nome',
-                    labelStyle: TextStyle(color: textGray),
+                    labelStyle: TextStyle(color: Cores.textGray),
                     filled: true,
-                    fillColor: backgroundBlack,
+                    fillColor: Cores.backgroundBlack,
                   ),
-                  style: TextStyle(color: textWhite),
+                  style: TextStyle(color: Cores.textWhite),
                 ),
                 SizedBox(height: 12),
                 TextField(
                   controller: descricaoController,
                   decoration: InputDecoration(
                     labelText: 'Descrição',
-                    labelStyle: TextStyle(color: textGray),
+                    labelStyle: TextStyle(color: Cores.textGray),
                     filled: true,
-                    fillColor: backgroundBlack,
+                    fillColor: Cores.backgroundBlack,
                   ),
-                  style: TextStyle(color: textWhite),
+                  style: TextStyle(color: Cores.textWhite),
                 ),
                 SizedBox(height: 12),
                 TextField(
@@ -99,27 +93,27 @@ class _TelaCardapioState extends State<TelaCardapio> {
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                   decoration: InputDecoration(
                     labelText: 'Preço (R\$)',
-                    labelStyle: TextStyle(color: textGray),
+                    labelStyle: TextStyle(color: Cores.textGray),
                     filled: true,
-                    fillColor: backgroundBlack,
+                    fillColor: Cores.backgroundBlack,
                   ),
-                  style: TextStyle(color: textWhite),
+                  style: TextStyle(color: Cores.textWhite),
                 ),
                 SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: categoriaSelecionada,
-                  dropdownColor: backgroundBlack,
-                  style: TextStyle(color: textWhite),
+                  dropdownColor: Cores.backgroundBlack,
+                  style: TextStyle(color: Cores.textWhite),
                   decoration: InputDecoration(
                     labelText: 'Categoria',
-                    labelStyle: TextStyle(color: textGray),
+                    labelStyle: TextStyle(color: Cores.textGray),
                     filled: true,
-                    fillColor: backgroundBlack,
+                    fillColor: Cores.backgroundBlack,
                   ),
                   items: categorias.map((cat) {
                     return DropdownMenuItem(
                       value: cat,
-                      child: Text(cat, style: TextStyle(color: textWhite)),
+                      child: Text(cat, style: TextStyle(color: Cores.textWhite)),
                     );
                   }).toList(),
                   onChanged: (value) => categoriaSelecionada = value,
@@ -156,7 +150,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
                 }
               },
               child: Text('Salvar'),
-              style: ElevatedButton.styleFrom(backgroundColor: primaryRed),
+              style: ElevatedButton.styleFrom(backgroundColor: Cores.primaryRed),
             ),
           ],
         );
@@ -174,34 +168,34 @@ class _TelaCardapioState extends State<TelaCardapio> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: cardBlack,
+          backgroundColor: Cores.cardBlack,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Text('Editar Item', style: TextStyle(color: textWhite)),
+          title: Text('Editar Item', style: TextStyle(color: Cores.textWhite)),
           content: SingleChildScrollView(
             child: Column(
               children: [
-                TextField(controller: nomeController, style: TextStyle(color: textWhite)),
-                TextField(controller: descricaoController, style: TextStyle(color: textWhite)),
+                TextField(controller: nomeController, style: TextStyle(color: Cores.textWhite)),
+                TextField(controller: descricaoController, style: TextStyle(color: Cores.textWhite)),
                 TextField(
                   controller: precoController,
-                  style: TextStyle(color: textWhite),
+                  style: TextStyle(color: Cores.textWhite),
                   keyboardType: TextInputType.numberWithOptions(decimal: true),
                 ),
                 SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: categoriaSelecionada,
-                  dropdownColor: backgroundBlack,
-                  style: TextStyle(color: textWhite),
+                  dropdownColor: Cores.backgroundBlack,
+                  style: TextStyle(color: Cores.textWhite),
                   decoration: InputDecoration(
                     labelText: 'Categoria',
-                    labelStyle: TextStyle(color: textGray),
+                    labelStyle: TextStyle(color: Cores.textGray),
                     filled: true,
-                    fillColor: backgroundBlack,
+                    fillColor: Cores.backgroundBlack,
                   ),
                   items: categorias.map((cat) {
                     return DropdownMenuItem(
                       value: cat,
-                      child: Text(cat, style: TextStyle(color: textWhite)),
+                      child: Text(cat, style: TextStyle(color: Cores.textWhite)),
                     );
                   }).toList(),
                   onChanged: (value) => categoriaSelecionada = value,
@@ -281,7 +275,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
     }
 
     return Scaffold(
-      backgroundColor: backgroundBlack,
+      backgroundColor: Cores.backgroundBlack,
       body: Row(
         children: [
           Barralateral(currentRoute: '/cardapio'),
@@ -291,21 +285,21 @@ class _TelaCardapioState extends State<TelaCardapio> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Gerenciamento de Cardápio', style: TextStyle(color: textWhite, fontSize: 32, fontWeight: FontWeight.bold)),
+                  Text('Gerenciamento de Cardápio', style: TextStyle(color: Cores.textWhite, fontSize: 32, fontWeight: FontWeight.bold)),
                   SizedBox(height: 24),
                   Row(
                     children: [
                       Expanded(
                         child: TextField(
                           onChanged: _filtrarCardapios,
-                          style: TextStyle(color: textWhite),
+                          style: TextStyle(color: Cores.textWhite),
                           decoration: InputDecoration(
                             hintText: 'Buscar item...',
-                            hintStyle: TextStyle(color: textGray),
-                            prefixIcon: Icon(Icons.search, color: textGray),
+                            hintStyle: TextStyle(color: Cores.textGray),
+                            prefixIcon: Icon(Icons.search, color: Cores.textGray),
                             filled: true,
-                            fillColor: cardBlack,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderGray)),
+                            fillColor: Cores.cardBlack,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Cores.borderGray)),
                           ),
                         ),
                       ),
@@ -315,7 +309,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
                         icon: Icon(Icons.add),
                         label: Text('Adicionar Item'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryRed,
+                          backgroundColor: Cores.primaryRed,
                           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                           textStyle: TextStyle(fontSize: 16),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -327,14 +321,14 @@ class _TelaCardapioState extends State<TelaCardapio> {
                   _loading
                       ? Center(child: CircularProgressIndicator())
                       : _filtrados.isEmpty
-                      ? Text('Nenhum item encontrado.', style: TextStyle(color: textGray))
+                      ? Text('Nenhum item encontrado.', style: TextStyle(color: Cores.textGray))
                       : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: agrupadoPorCategoria.entries.map((entry) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(entry.key, style: TextStyle(color: textWhite, fontSize: 24, fontWeight: FontWeight.bold)),
+                          Text(entry.key, style: TextStyle(color: Cores.textWhite, fontSize: 24, fontWeight: FontWeight.bold)),
                           SizedBox(height: 12),
                           LayoutBuilder(
                             builder: (context, constraints) {
@@ -346,25 +340,25 @@ class _TelaCardapioState extends State<TelaCardapio> {
                                     width: constraints.maxWidth > 900 ? constraints.maxWidth / 3 - 20 : constraints.maxWidth,
                                     padding: EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color: cardBlack,
+                                      color: Cores.cardBlack,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: borderGray),
+                                      border: Border.all(color: Cores.borderGray),
                                     ),
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(cardapio.nome, style: TextStyle(color: textWhite, fontSize: 20, fontWeight: FontWeight.bold)),
+                                        Text(cardapio.nome, style: TextStyle(color: Cores.textWhite, fontSize: 20, fontWeight: FontWeight.bold)),
                                         SizedBox(height: 8),
-                                        Text(cardapio.descricao, style: TextStyle(color: textGray)),
+                                        Text(cardapio.descricao, style: TextStyle(color: Cores.textGray)),
                                         SizedBox(height: 8),
-                                        Text('R\$ ${cardapio.preco.toStringAsFixed(2)}', style: TextStyle(color: textWhite)),
+                                        Text('R\$ ${cardapio.preco.toStringAsFixed(2)}', style: TextStyle(color: Cores.textWhite)),
                                         SizedBox(height: 8),
                                         Text(cardapio.ativo ? 'Ativo' : 'Suspenso', style: TextStyle(color: cardapio.ativo ? Colors.green : Colors.red)),
                                         SizedBox(height: 16),
                                         Row(
                                           mainAxisAlignment: MainAxisAlignment.end,
                                           children: [
-                                            IconButton(icon: Icon(Icons.edit, color: lightRed), onPressed: () => _mostrarDialogEditarItem(cardapio)),
+                                            IconButton(icon: Icon(Icons.edit, color: Cores.lightRed), onPressed: () => _mostrarDialogEditarItem(cardapio)),
                                             IconButton(
                                               icon: Icon(cardapio.ativo ? Icons.block : Icons.check_circle, color: Colors.amber),
                                               onPressed: () => _alternarSuspensao(cardapio),

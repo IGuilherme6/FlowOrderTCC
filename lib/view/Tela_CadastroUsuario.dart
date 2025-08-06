@@ -3,6 +3,7 @@ import 'package:floworder/controller/UsuarioController.dart';
 import 'package:floworder/models/Usuario.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../auxiliar/Cores.dart';
 import '../auxiliar/Formatar.dart';
 import '../auxiliar/Validador.dart';
 import 'BarraLateral.dart';
@@ -31,15 +32,6 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
 
   List<String> _cargos = ['Garçom', 'Atendente', 'Cozinheiro'];
 
-  // Cores do tema
-  static const Color primaryRed = Color(0xFFDC2626);
-  static const Color lightRed = Color(0xFFEF4444);
-  static const Color backgroundBlack = Color(0xFF111827);
-  static const Color cardBlack = Color(0xFF1F2937);
-  static const Color textWhite = Color(0xFFF9FAFB);
-  static const Color textGray = Color(0xFF9CA3AF);
-  static const Color borderGray = Color(0xFF374151);
-
   Future<void> _cadastrarFuncionario(funcionario) async {
     String mensagem = await usuarioController.cadastrarFuncionario(funcionario);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -60,7 +52,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
     final isWideScreen = screenWidth > 1000;
 
     return Scaffold(
-      backgroundColor: backgroundBlack,
+      backgroundColor: Cores.backgroundBlack,
       body: Row(
         children: [
           Barralateral(currentRoute: '/funcionarios'),
@@ -73,7 +65,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                   Text(
                     'Gestão de Funcionários',
                     style: TextStyle(
-                      color: textWhite,
+                      color: Cores.textWhite,
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
                     ),
@@ -111,12 +103,12 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
     return Container(
       constraints: BoxConstraints(minHeight: 400, maxHeight: 500),
       decoration: BoxDecoration(
-        color: cardBlack,
+        color: Cores.cardBlack,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: primaryRed.withOpacity(0.2)),
+        border: Border.all(color: Cores.primaryRed.withOpacity(0.2)),
         boxShadow: [
           BoxShadow(
-            color: primaryRed.withOpacity(0.1),
+            color: Cores.primaryRed.withOpacity(0.1),
             spreadRadius: 0,
             blurRadius: 20,
             offset: Offset(0, 10),
@@ -129,12 +121,12 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
         children: [
           Row(
             children: [
-              Icon(Icons.list, color: primaryRed),
+              Icon(Icons.list, color: Cores.primaryRed),
               SizedBox(width: 8),
               Text(
                 'Funcionários Cadastrados',
                 style: TextStyle(
-                  color: textWhite,
+                  color: Cores.textWhite,
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
                 ),
@@ -155,7 +147,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                 // Estados de carregamento e erro
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
-                    child: CircularProgressIndicator(color: primaryRed),
+                    child: CircularProgressIndicator(color: Cores.primaryRed),
                   );
                 }
 
@@ -164,15 +156,15 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.error, color: primaryRed, size: 48),
+                        Icon(Icons.error, color: Cores.primaryRed, size: 48),
                         SizedBox(height: 16),
                         Text(
                           'Erro ao carregar funcionários',
-                          style: TextStyle(color: textWhite),
+                          style: TextStyle(color: Cores.textWhite),
                         ),
                         Text(
                           '${snapshot.error}',
-                          style: TextStyle(color: textGray, fontSize: 12),
+                          style: TextStyle(color: Cores.textGray, fontSize: 12),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -186,11 +178,11 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.person_off, color: textGray, size: 48),
+                        Icon(Icons.person_off, color: Cores.textGray, size: 48),
                         SizedBox(height: 16),
                         Text(
                           'Nenhum funcionário cadastrado',
-                          style: TextStyle(color: textGray),
+                          style: TextStyle(color: Cores.textGray),
                         ),
                       ],
                     ),
@@ -211,25 +203,25 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                       return Container(
                         margin: EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: backgroundBlack,
+                          color: Cores.backgroundBlack,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: borderGray.withOpacity(0.5),
+                            color: Cores.borderGray.withOpacity(0.5),
                           ),
                         ),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: primaryRed.withOpacity(0.2),
+                            backgroundColor: Cores.primaryRed.withOpacity(0.2),
                             child: Icon(
                               Icons.person,
-                              color: primaryRed,
+                              color: Cores.primaryRed,
                               size: 20,
                             ),
                           ),
                           title: Text(
                             funcionario['nome'] ?? 'Nome não informado',
                             style: TextStyle(
-                              color: textWhite,
+                              color: Cores.textWhite,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -238,13 +230,13 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                             children: [
                               Text(
                                 funcionario['cargo'] ?? 'Cargo não informado',
-                                style: TextStyle(color: textGray),
+                                style: TextStyle(color: Cores.textGray),
                               ),
                               if (funcionario['email'] != null)
                                 Text(
                                   funcionario['email'],
                                   style: TextStyle(
-                                    color: textGray.withOpacity(0.8),
+                                    color: Cores.textGray.withOpacity(0.8),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -257,14 +249,14 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                               IconButton(
                                 icon: Icon(
                                   Icons.edit,
-                                  color: lightRed,
+                                  color: Cores.lightRed,
                                   size: 20,
                                 ),
                                 onPressed: () {
                                   !_tipoLista ? ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text('Funcionários Inativos não podem ser editados'),
-                                      backgroundColor: lightRed,
+                                      backgroundColor: Cores.lightRed,
                                     ),
                                   ) : (() {
                                     setState(() {
@@ -292,24 +284,24 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                             ? IconButton(
                           icon: Icon(
                             Icons.person_remove,
-                            color: primaryRed,
+                            color: Cores.primaryRed,
                             size: 20,
                           ),
                           onPressed: () async {
                             final confirmar = await showDialog<bool>(
                               context: context,
                               builder: (context) => AlertDialog(
-                                backgroundColor: backgroundBlack,
-                                title: Text('Confirmar Desativação', style: TextStyle(color: textWhite),),
-                                content: Text('Tem certeza que deseja desativar este funcionário?', style: TextStyle(color: textWhite),),
+                                backgroundColor: Cores.backgroundBlack,
+                                title: Text('Confirmar Desativação', style: TextStyle(color: Cores.textWhite),),
+                                content: Text('Tem certeza que deseja desativar este funcionário?', style: TextStyle(color: Cores.textWhite),),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(context, false),
-                                    child: Text('Cancelar', style: TextStyle(color: primaryRed),),
+                                    child: Text('Cancelar', style: TextStyle(color: Cores.primaryRed),),
                                   ),
                                   TextButton(
                                     onPressed: () => Navigator.pop(context, true),
-                                    child: Text('Desativar', style: TextStyle(color: primaryRed),),
+                                    child: Text('Desativar', style: TextStyle(color: Cores.primaryRed),),
                                   ),
                                 ],
                               ),
@@ -324,30 +316,30 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                             : IconButton(
                           icon: Icon(
                             Icons.person_add,
-                            color: primaryRed,
+                            color: Cores.primaryRed,
                             size: 20,
                           ),
                           onPressed: () async {
                             final confirmar = await showDialog<bool>(
                               context: context,
                               builder: (context) => AlertDialog(
-                                backgroundColor: backgroundBlack,
+                                backgroundColor: Cores.backgroundBlack,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
-                                  side: BorderSide(color: borderGray)
+                                  side: BorderSide(color: Cores.borderGray)
                                 ),
-                                title: Text('Confirmar Ativação', style: TextStyle(color: textWhite),),
+                                title: Text('Confirmar Ativação', style: TextStyle(color: Cores.textWhite),),
                                 
-                                content: Text('Tem certeza que deseja ativar este funcionário?', style: TextStyle(color: textWhite),),
+                                content: Text('Tem certeza que deseja ativar este funcionário?', style: TextStyle(color: Cores.textWhite),),
                                 actions: [
                                   TextButton(
                                     onPressed: () => Navigator.pop(context, false),
-                                    child: Text('Cancelar', style: TextStyle(color: primaryRed),),
+                                    child: Text('Cancelar', style: TextStyle(color: Cores.primaryRed),),
 
                                   ),
                                   TextButton(
                                     onPressed: () => Navigator.pop(context, true),
-                                    child: Text('Ativar', style: TextStyle(color: primaryRed),),
+                                    child: Text('Ativar', style: TextStyle(color: Cores.primaryRed),),
                                   ),
                                 ],
                               ),
@@ -378,12 +370,12 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
   Widget _buildFormCard() {
     return Container(
       decoration: BoxDecoration(
-        color: cardBlack,
+        color: Cores.cardBlack,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: primaryRed.withOpacity(0.2)),
+        border: Border.all(color: Cores.primaryRed.withOpacity(0.2)),
         boxShadow: [
           BoxShadow(
-            color: primaryRed.withOpacity(0.1),
+            color: Cores.primaryRed.withOpacity(0.1),
             spreadRadius: 0,
             blurRadius: 20,
             offset: Offset(0, 10),
@@ -398,12 +390,12 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
           children: [
             Row(
               children: [
-                Icon(Icons.person_add, color: primaryRed),
+                Icon(Icons.person_add, color: Cores.primaryRed),
                 SizedBox(width: 8),
                 Text(
                   'Dados de Funcionário',
                   style: TextStyle(
-                    color: textWhite,
+                    color: Cores.textWhite,
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                   ),
@@ -496,7 +488,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
               suffixIcon: IconButton(
                 icon: Icon(
                   _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                  color: textGray,
+                  color: Cores.textGray,
                 ),
                 onPressed: () {
                   setState(() {
@@ -513,12 +505,12 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                     height: 56,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryRed,
+                        backgroundColor: Cores.primaryRed,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                         elevation: 4,
-                        shadowColor: primaryRed.withOpacity(0.3),
+                        shadowColor: Cores.primaryRed.withOpacity(0.3),
                       ),
                       icon: Icon(Icons.save, color: Colors.white),
                       label: Text(
@@ -633,26 +625,26 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
     return TextFormField(
       controller: controller,
       obscureText: obscure,
-      style: TextStyle(color: textWhite),
+      style: TextStyle(color: Cores.textWhite),
       validator: validator,
       inputFormatters: inputFormatters,
       enabled: enabled,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: textGray),
-        prefixIcon: Icon(icon, color: primaryRed),
+        labelStyle: TextStyle(color: Cores.textGray),
+        prefixIcon: Icon(icon, color: Cores.primaryRed),
         suffixIcon: suffixIcon,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: borderGray),
+          borderSide: BorderSide(color: Cores.borderGray),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: borderGray),
+          borderSide: BorderSide(color: Cores.borderGray),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: primaryRed, width: 2),
+          borderSide: BorderSide(color: Cores.primaryRed, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -663,7 +655,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
           borderSide: BorderSide(color: Colors.red, width: 2),
         ),
         filled: true,
-        fillColor: backgroundBlack,
+        fillColor: Cores.backgroundBlack,
         errorStyle: TextStyle(color: Colors.red),
       ),
     );
@@ -673,16 +665,16 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 5, vertical: 0),
       decoration: BoxDecoration(
-        color: backgroundBlack,
+        color: Cores.backgroundBlack,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderGray),
+        border: Border.all(color: Cores.borderGray),
       ),
       child: DropdownButton<String>(
         value: _tipoLista ? 'Ativos' : 'Inativos',
-        style: TextStyle(color: textWhite, fontSize: 14),
-        dropdownColor: cardBlack,
+        style: TextStyle(color: Cores.textWhite, fontSize: 14),
+        dropdownColor: Cores.cardBlack,
         underline: SizedBox(), // Remove a linha padrão do dropdown
-        icon: Icon(Icons.arrow_drop_down, color: textWhite),
+        icon: Icon(Icons.arrow_drop_down, color: Cores.textWhite),
         items: ['Ativos', 'Inativos'].map((String status) {
           return DropdownMenuItem<String>(
             value: status,
@@ -691,7 +683,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
               children: [
                 Icon(
                   Icons.person,
-                  color: primaryRed,
+                  color: Cores.primaryRed,
                   size: 16,
                 ),
                 SizedBox(width: 8),
@@ -717,26 +709,26 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
   Widget _buildDropdownCargo() {
     return DropdownButtonFormField<String>(
       value: _selectedCargo,
-      style: TextStyle(color: textWhite),
-      dropdownColor: cardBlack,
+      style: TextStyle(color: Cores.textWhite),
+      dropdownColor: Cores.cardBlack,
       decoration: InputDecoration(
-        prefixIcon: Icon(Icons.work, color: primaryRed),
+        prefixIcon: Icon(Icons.work, color: Cores.primaryRed),
         labelText: 'Cargo',
-        labelStyle: TextStyle(color: textGray),
+        labelStyle: TextStyle(color: Cores.textGray),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: borderGray),
+          borderSide: BorderSide(color: Cores.borderGray),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: borderGray),
+          borderSide: BorderSide(color: Cores.borderGray),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: primaryRed, width: 2),
+          borderSide: BorderSide(color: Cores.primaryRed, width: 2),
         ),
         filled: true,
-        fillColor: backgroundBlack,
+        fillColor: Cores.backgroundBlack,
       ),
       items: _cargos.map((String cargo) {
         return DropdownMenuItem<String>(value: cargo, child: Text(cargo));
