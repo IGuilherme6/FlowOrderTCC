@@ -1,5 +1,6 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:floworder/controller/PedidoController.dart';
+import 'package:floworder/models/Pedido.dart';
 import 'package:floworder/view/BarraLateral.dart';
 
 class TelaPedidos extends StatefulWidget {
@@ -17,22 +18,23 @@ class _TelaPedidosState extends State<TelaPedidos> {
   static const Color textGray = Color(0xFF9CA3AF);
   static const Color borderGray = Color(0xFF374151);
 
+  final PedidoController _controller = PedidoController();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundBlack,
       body: Row(
         children: [
-          // Barra lateral
           Barralateral(currentRoute: '/pedidos'),
           Expanded(
-            child: SingleChildScrollView(
+            child: Padding(
               padding: EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Pedidos',
+                    'Pedidos em Tempo Real',
                     style: TextStyle(
                       color: textWhite,
                       fontSize: 32,
@@ -40,16 +42,88 @@ class _TelaPedidosState extends State<TelaPedidos> {
                     ),
                   ),
                   SizedBox(height: 24),
+                  Expanded(
+                    child: StreamBuilder<List<Pedido>>(
+                      stream: _controller.ouvirPedidosTempoReal(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Center(child: CircularProgressIndicator());
+                        }
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return Center(
+                            child: Text(
+                              'Nenhum pedido encontrado.',
+                              style: TextStyle(color: textGray),
+                            ),
+                          );
+                        }
 
-                  // Conteúdo temporário
-                  Center(
-                    child: Text(
-                      'Implementar futuramente',
-                      style: TextStyle(
-                        color: textGray,
-                        fontSize: 18,
-                        fontStyle: FontStyle.italic,
-                      ),
+                        final pedidos = snapshot.data!;
+                        return ListView.builder(
+                          itemCount: pedidos.length,
+                          itemBuilder: (context, index) {
+                            final pedido = pedidos[index];
+                            return Container(
+                              margin: EdgeInsets.only(bottom: 16),
+                              padding: EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: cardBlack,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: borderGray),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Mesa ${pedido.mesa.numero}',
+                                    style: TextStyle(
+                                      color: textWhite,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text(
+                                    'Status: ${pedido.statusAtual}',
+                                    style: TextStyle(color: textGray),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text('Itens:', style: TextStyle(color: textWhite)),
+                                  ...pedido.itens.map((item) => Text(
+                                    '- ${item.nome} (R\$ ${item.preco.toStringAsFixed(2)})',
+                                    style: TextStyle(color: textGray),
+                                  )),
+                                  SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: Pedido.statusOpcoes.map((status) {
+                                      return Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: pedido.statusAtual == status
+                                                ? primaryRed
+                                                : darkRed,
+                                          ),
+                                          onPressed: () async {
+                                            if (pedido.uid != null) {
+                                              await _controller.atualizarStatusPedido(
+                                                pedido.uid!,
+                                                status,
+                                              );
+                                            }
+                                          },
+                                          child: Text(status),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
                     ),
                   ),
                 ],
