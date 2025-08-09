@@ -1,3 +1,4 @@
+import 'package:floworder/view/TelaHome.dart';
 import 'package:flutter/material.dart';
 import 'package:floworder/view/TelaCaixa.dart';
 import 'package:floworder/view/TelaCardapio.dart';
@@ -37,10 +38,15 @@ class Barralateral extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Image.asset(
-                  'logo/Icone_FlowOrder.png',
-                  height: 100,
-                  width: double.infinity,
+                GestureDetector(
+                  onTap: () {
+                    navigateWithFade(context, '/home');
+                  },
+                  child: Image.asset(
+                    'logo/Icone_FlowOrder.png',
+                    height: 100,
+                    width: double.infinity,
+                  ),
                 ),
               ],
             ),
@@ -144,7 +150,7 @@ class Barralateral extends StatelessWidget {
       case '/relatorios':
         return TelaRelatorio();
       default:
-        return TelaDashboard();
+        return TelaHome();
     }
   }
 

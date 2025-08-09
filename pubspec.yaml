@@ -33,22 +33,19 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
-  http: ^1.4.0
-  flutter_bloc: ^9.1.1
-  provider: ^6.1.5
-  path_provider: ^2.1.5
-  intl: ^0.20.2
-  firebase_core: ^3.13.1
-  firebase_ai: ^2.0.0
-  firebase_analytics: ^11.4.6
-  cloud_firestore: ^5.6.8
-  firebase_storage: ^12.4.6
-  test: ^1.25.7
-  mockito: ^5.4.4
-  fake_cloud_firestore: ^3.1.0
-  flutter_multi_formatter: ^2.11.11
-  build_runner: ^2.4.6
+  cupertino_icons: ^1.0.8 # Ícones estilo iOS
+  http: ^1.4.0 # Requisições HTTP e consumo de APIs
+  intl: ^0.20.2 # Formatação de datas, números e moedas
+  firebase_core: ^3.13.1 # Núcleo de inicialização do Firebase
+  firebase_ai: ^2.0.0 # Recursos de IA do Firebase
+  firebase_analytics: ^11.4.6 # Análise de uso do app (Analytics)
+  cloud_firestore: ^5.6.8 # Banco de dados NoSQL do Firebase
+  firebase_storage: ^12.4.6 # Armazenamento de arquivos no Firebase
+  test: ^1.25.7 # Testes unitários e de integração
+  mockito: ^5.4.4 # Objetos simulados para testes
+  fake_cloud_firestore: ^3.1.0 # Firestore falso para testes
+  flutter_multi_formatter: ^2.11.11 # Formatação de texto (CPF, telefone, etc.)
+  build_runner: ^2.4.6 # Geração automática de código
 
 dev_dependencies:
   flutter_test:

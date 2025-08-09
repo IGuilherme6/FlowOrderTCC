@@ -33,7 +33,7 @@ class _telalogin extends State<Tela_Login> {
       LoginFirebase loginFirebase = LoginFirebase();
 
       if (loginFirebase.isLoggedIn()) {
-        Navigator.pushReplacementNamed(context, '/funcionarios');
+        Navigator.pushReplacementNamed(context, '/home');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Usuário já está logado'),
@@ -41,7 +41,7 @@ class _telalogin extends State<Tela_Login> {
           ),
         );
 
-        Navigator.pushReplacementNamed(context, '/funcionarios');
+        Navigator.pushReplacementNamed(context, '/home');
       }
     } catch (e) {
       print('Erro ao verificar status de autenticação: $e');
@@ -94,7 +94,7 @@ class _telalogin extends State<Tela_Login> {
           ),
         );
 
-        Navigator.pushReplacementNamed(context, '/funcionarios');
+        Navigator.pushReplacementNamed(context, '/home');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(resultadoLogin), backgroundColor: Colors.red),

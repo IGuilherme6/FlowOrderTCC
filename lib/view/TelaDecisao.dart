@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:floworder/view/TelaHome.dart';
 import 'package:floworder/view/Tela_CadastroUsuario.dart';
 import 'package:floworder/view/Tela_Login.dart';
 import 'package:flutter/material.dart';
@@ -19,9 +20,9 @@ class TelaDecisao extends StatelessWidget {
           );
         }
 
-        // Se o usuário está logado, manda para de cadastro de funcionário
+        // Se o usuário está logado, manda para home
         if (snapshot.hasData) {
-          return TelaCadastroUsuario();
+          return TelaHome();
         }
 
         // Se não está logado, manda para TelaLogin

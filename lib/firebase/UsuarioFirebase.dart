@@ -89,6 +89,7 @@ class UsuarioFirebase {
   /// Verificar se CPF existe nos gerentes
   Future<bool> verificarCpfExistenteGerentes(String cpf) async {
     final gerentesCpf = await _usuariosRef
+
         .where('cpf', isEqualTo: cpf)
         .get();
     return gerentesCpf.docs.isNotEmpty;
@@ -102,6 +103,7 @@ class UsuarioFirebase {
       final funcionariosSnapshot = await _usuariosRef
           .doc(gerenteDoc.id)
           .collection('funcionarios')
+
           .where('cpf', isEqualTo: cpf)
           .get();
 
