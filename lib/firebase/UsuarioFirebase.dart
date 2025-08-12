@@ -155,4 +155,13 @@ class UsuarioFirebase {
       'cpf': usuario.cpf,
     });
   }
+
+  Future<void> apagarFuncionario(String gerenteId,String id) async{
+    await _usuariosRef
+        .doc(gerenteId)
+        .collection('funcionarios')
+        .doc(id)
+        .delete();
+
+  }
 }
