@@ -125,9 +125,21 @@ class UsuarioController {
 
       return false;
     } catch (e) {
-      print('Erro ao verificar CPF: $e');
       return false;
     }
+  }
+
+  Future<String> deletarFuncionario(String id) async{
+    String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
+    if (gerenteId == null) return 'Erro: Nenhum gerente logado';
+
+    try{
+      await _usuarioFirebase.apagarFuncionario(gerenteId, id);
+      return 'Funcioanrio foi apagado com sucesso';
+    }catch (e){
+      return 'erro ao deletar';
+    }
+
   }
 
   /// Validar se o usuário é gerente

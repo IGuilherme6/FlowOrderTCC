@@ -1,89 +1,117 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import '../firebase/CardapioFirebase.dart';
 import '../models/Cardapio.dart';
 
 class CardapioController {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final CardapioFirebase _cardapioFirebase = CardapioFirebase();
 
-  Future<void> cadastrarCardapio(Cardapio cardapio) async {
+  /// Cadastrar cardápio
+  Future<String> cadastrarCardapio(Cardapio cardapio) async {
     try {
-      String? uidGerente = FirebaseAuth.instance.currentUser?.uid;
-      if (uidGerente == null) throw Exception("Usuário não autenticado");
+      if (cardapio.nome.isEmpty) {
+        return 'Erro: Nome do cardápio não pode estar vazio';
+      }
 
-      await _firestore
-          .collection('gerentes')
-          .doc(uidGerente)
-          .collection('cardapio')
-          .add(cardapio.toMap());
+
+      String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+      if (userId == null) {
+        throw Exception('Erro: Nenhum Gerente logado');
+      }
+
+      String cardapioId = await _cardapioFirebase.adicionarCardapio(userId, cardapio);
+      cardapio.uid = cardapioId;
+
+      return 'Cardápio cadastrado com sucesso';
     } catch (e) {
-      throw Exception("Erro ao cadastrar cardápio: $e");
+      throw Exception('Erro ao cadastrar cardápio: ${e.toString()}');
     }
   }
 
-  Future<List<Cardapio>> buscarCardapiosDoGerente() async {
+  /// Buscar cardápios do gerente logado (snapshot único)
+  Future<List<Cardapio>> buscarCardapios() async {
+    String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+    if (userId == null) {
+      throw Exception('Erro: Nenhum Gerente logado');
+    }
+
     try {
-      String? uidGerente = FirebaseAuth.instance.currentUser?.uid;
-      if (uidGerente == null) throw Exception("Usuário não autenticado");
+      QuerySnapshot snapshot = await _cardapioFirebase.buscarCardapios(userId);
 
-      final snapshot = await _firestore
-          .collection('gerentes')
-          .doc(uidGerente)
-          .collection('cardapio')
-          .get();
-
-      return snapshot.docs
-          .map((doc) => Cardapio.fromMap(doc.id, doc.data()))
-          .toList();
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return Cardapio.fromMap(doc.id, data);
+      }).toList();
     } catch (e) {
-      throw Exception("Erro ao buscar cardápios: $e");
+      throw Exception('Erro ao buscar cardápios: ${e.toString()}');
     }
   }
 
-  Future<void> atualizarCardapio(Cardapio cardapio) async {
-    try {
-      String? uidGerente = FirebaseAuth.instance.currentUser?.uid;
-      if (uidGerente == null) throw Exception("Usuário não autenticado");
+  /// Stream de cardápios do gerente (tempo real)
+  Stream<List<Cardapio>> buscarCardapioTempoReal() {
+    String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+    if (userId == null) {
+      return Stream.value([]);
+    }
 
-      await _firestore
-          .collection('gerentes')
-          .doc(uidGerente)
-          .collection('cardapio')
-          .doc(cardapio.uid)
-          .update(cardapio.toMap());
+    return _cardapioFirebase.streamCardapios(userId).map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return Cardapio.fromMap(doc.id, data);
+      }).toList();
+    });
+  }
+
+
+
+  /// Atualizar cardápio
+  Future<String> atualizarCardapio(Cardapio cardapio) async {
+    String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+    if (userId == null) {
+      throw Exception('Erro: Nenhum Gerente logado');
+    }
+
+    if (cardapio.uid == null || cardapio.uid!.isEmpty) {
+      throw Exception('UID do cardápio é necessário para atualizar');
+    }
+
+    try {
+      await _cardapioFirebase.atualizarCardapio(userId, cardapio);
+      return 'Cardápio atualizado com sucesso';
     } catch (e) {
-      throw Exception("Erro ao atualizar cardápio: $e");
+      throw Exception('Erro ao atualizar cardápio: ${e.toString()}');
     }
   }
 
-  Future<void> excluirCardapio(String cardapioId) async {
-    try {
-      String? uidGerente = FirebaseAuth.instance.currentUser?.uid;
-      if (uidGerente == null) throw Exception("Usuário não autenticado");
+  /// Deletar cardápio
+  Future<String> deletarCardapio(String cardapioUid) async {
+    String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+    if (userId == null) {
+      throw Exception('Erro: Nenhum Gerente logado');
+    }
 
-      await _firestore
-          .collection('gerentes')
-          .doc(uidGerente)
-          .collection('cardapio')
-          .doc(cardapioId)
-          .delete();
+    try {
+      await _cardapioFirebase.excluirCardapio(userId, cardapioUid);
+      return 'Cardápio deletado com sucesso';
     } catch (e) {
-      throw Exception("Erro ao excluir cardápio: $e");
+      throw Exception('Erro ao deletar cardápio: ${e.toString()}');
     }
   }
 
-  Future<void> suspenderCardapio(String cardapioId, bool suspender) async {
-    try {
-      String? uidGerente = FirebaseAuth.instance.currentUser?.uid;
-      if (uidGerente == null) throw Exception("Usuário não autenticado");
+  /// Suspender ou reativar cardápio
+  Future<String> suspenderCardapio(String cardapioUid, bool suspender) async {
+    String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+    if (userId == null) {
+      throw Exception('Erro: Nenhum Gerente logado');
+    }
 
-      await _firestore
-          .collection('gerentes')
-          .doc(uidGerente)
-          .collection('cardapio')
-          .doc(cardapioId)
-          .update({'ativo': suspender});
+    try {
+      await _cardapioFirebase.suspenderCardapio(userId, cardapioUid, suspender);
+      return suspender
+          ? 'Cardápio suspenso com sucesso'
+          : 'Cardápio reativado com sucesso';
     } catch (e) {
-      throw Exception("Erro ao suspender/reativar cardápio: $e");
+      throw Exception('Erro ao alterar status do cardápio: ${e.toString()}');
     }
   }
+
 }
