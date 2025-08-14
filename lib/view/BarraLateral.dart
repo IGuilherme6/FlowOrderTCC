@@ -1,3 +1,6 @@
+import 'dart:ui' as html;
+
+import 'package:floworder/firebase/LoginFirebase.dart';
 import 'package:floworder/view/TelaHome.dart';
 import 'package:flutter/material.dart';
 import 'package:floworder/view/TelaCaixa.dart';
@@ -15,6 +18,10 @@ class Barralateral extends StatelessWidget {
 
   const Barralateral({Key? key, required this.currentRoute}) : super(key: key);
 
+  Future<void> logout() async {
+    LoginFirebase loginFirebase = LoginFirebase();
+    loginFirebase.logout();
+  }
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -108,6 +115,31 @@ class Barralateral extends StatelessWidget {
               ],
             ),
           ),
+          Container(//botão de sair
+            margin: const EdgeInsets.all(8),
+            child: ListTile(
+              leading: Icon(
+                Icons.logout,
+                color: Cores.textGray,
+                size: 20,
+              ),
+              title: Text(
+                'Deslogar/Logout',
+                style: TextStyle(
+                  color: Cores.textGray,
+                  fontSize: 16,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+              onTap: () async {
+                Navigator.pushReplacementNamed(context, '/telalogin');
+                await logout();
+              },
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            ),
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );

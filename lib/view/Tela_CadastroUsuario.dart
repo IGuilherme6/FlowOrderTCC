@@ -288,7 +288,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                                           style: TextStyle(color: Cores.textWhite),
                                         ),
                                         content: Text(
-                                          'Tem certeza que deseja excluir este funcionário?',
+                                          'Tem certeza que deseja excluir este funcionário? a exclusão será permanente',
                                           style: TextStyle(color: Cores.textWhite),
                                         ),
                                         actions: [
