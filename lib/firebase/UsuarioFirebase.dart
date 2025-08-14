@@ -76,6 +76,7 @@ class UsuarioFirebase {
       'telefone': usuario.telefone,
       'cargo': usuario.cargo,
       'cpf': usuario.cpf,
+      'gerenteUid': gerenteId,
       'ativo': true,
       'criadoEm': FieldValue.serverTimestamp(),
     });
@@ -153,6 +154,7 @@ class UsuarioFirebase {
       'telefone': usuario.telefone,
       'cargo': usuario.cargo,
       'cpf': usuario.cpf,
+      'gerenteUid': gerenteId,
     });
   }
 
