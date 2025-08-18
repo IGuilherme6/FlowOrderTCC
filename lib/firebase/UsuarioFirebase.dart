@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:test/expect.dart';
 import '../models/Usuario.dart';
 
 class UsuarioFirebase {
@@ -104,7 +105,7 @@ class UsuarioFirebase {
       final funcionariosSnapshot = await _usuariosRef
           .doc(gerenteDoc.id)
           .collection('funcionarios')
-
+          .where('ativo', isEqualTo: true)
           .where('cpf', isEqualTo: cpf)
           .get();
 
@@ -135,12 +136,48 @@ class UsuarioFirebase {
   }
 
   /// Atualizar status do funcionário
-  Future<void> atualizarStatusFuncionario(String gerenteId, String funcionarioId, bool ativo) async {
-    await _usuariosRef
+  Future<String> atualizarStatusFuncionario(
+      String gerenteId, String funcionarioId, bool ativo) async {
+    try {
+
+      final funcionarioDoc = await buscarFuncionario(gerenteId, funcionarioId);
+      if (!funcionarioDoc.exists) {
+        return "Funcionário não encontrado";
+      }
+
+      if(ativo) {
+        final funcionarioData = funcionarioDoc.data();
+        final cpf = funcionarioData?['cpf'] as String?;
+
+        if (cpf == null) {
+          return "CPF do funcionário não encontrado";
+        }
+
+        if (await verificarCpfExistenteFuncionarios(cpf)) {
+          return "Existe outra conta com CPF ativo";
+        }
+      }
+
+      await _usuariosRef
+          .doc(gerenteId)
+          .collection('funcionarios')
+          .doc(funcionarioId)
+          .update({'ativo': ativo});
+
+      return "Ativar o usuário ocorreu com êxito";
+    } catch (e) {
+      return "Erro ao ativar o usuário: $e";
+    }
+  }
+
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> buscarFuncionario(String gerenteId,String id) async{
+    final doc = await _usuariosRef
         .doc(gerenteId)
         .collection('funcionarios')
-        .doc(funcionarioId)
-        .update({'ativo': ativo});
+        .doc(id)
+        .get();
+    return doc;
   }
 
   /// Atualizar dados do funcionário
@@ -164,6 +201,26 @@ class UsuarioFirebase {
         .collection('funcionarios')
         .doc(id)
         .delete();
-
   }
+
+  Future<bool?> verificaFuncionarioAtivo(String email) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+
+          .collection('funcionarios')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final data = snapshot.docs.first.data();
+        return data['ativo'] == true;
+      } else {
+        return null; // funcionário não encontrado
+      }
+    } catch (e) {
+      return null; // erro ao consultar
+    }
+  }
+
 }

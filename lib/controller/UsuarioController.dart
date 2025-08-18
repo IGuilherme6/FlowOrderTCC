@@ -82,19 +82,19 @@ class UsuarioController {
   }
 
   /// Desativar funcionário
-  Future<void> desativarFuncionario(String funcionarioId) async {
+  Future<String> desativarFuncionario(String funcionarioId) async {
     String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
     if (gerenteId == null) throw Exception('Nenhum gerente logado');
 
-    await _usuarioFirebase.atualizarStatusFuncionario(gerenteId, funcionarioId, false);
+    return await _usuarioFirebase.atualizarStatusFuncionario(gerenteId, funcionarioId, false);
   }
 
   /// Ativar funcionário
-  Future<void> ativarFuncionario(String funcionarioId) async {
+  Future<String> ativarFuncionario(String funcionarioId) async {
     String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
     if (gerenteId == null) throw Exception('Nenhum gerente logado');
 
-    await _usuarioFirebase.atualizarStatusFuncionario(gerenteId, funcionarioId, true);
+    return await _usuarioFirebase.atualizarStatusFuncionario(gerenteId, funcionarioId, true);
   }
 
   /// Editar funcionário
@@ -156,4 +156,6 @@ class UsuarioController {
       return false;
     }
   }
+
+
 }

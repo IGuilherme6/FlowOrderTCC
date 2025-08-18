@@ -43,6 +43,7 @@ class Validador  {
     return emailRegex.hasMatch(email);
   }
 
+
   bool validarSenha(String senha) {
     return senha.length >= 6;
   }

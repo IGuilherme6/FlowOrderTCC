@@ -52,6 +52,20 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
     );
   }
 
+  Future<void> _ativarFuncionario(String id) async{
+    String mensagem = await usuarioController.ativarFuncionario(id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(await mensagem), backgroundColor: Colors.blue),
+    );
+  }
+
+  Future<void> _desativarFuncionario(String id) async{
+    String mensagem = await usuarioController.desativarFuncionario(id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(await mensagem), backgroundColor: Colors.blue),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -351,7 +365,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                                     );
 
                                     if (confirmar == true) {
-                                      usuarioController.desativarFuncionario(doc.id);
+                                      _desativarFuncionario(doc.id);
                                     }
                                   },
                                   tooltip: 'Desativar funcionário',
@@ -392,7 +406,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                                     );
 
                                     if (confirmar == true) {
-                                      usuarioController.ativarFuncionario(doc.id);
+                                      _ativarFuncionario(doc.id);
                                     }
                                   },
                                   tooltip: 'Ativar funcionário',
