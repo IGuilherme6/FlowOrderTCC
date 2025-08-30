@@ -12,12 +12,7 @@ class ItemCardapio {
   });
 
   Map<String, dynamic> toMap() {
-    return {
-      'uid': uid,
-      'nome': nome,
-      'preco': preco,
-      'categoria': categoria,
-    };
+    return {'uid': uid, 'nome': nome, 'preco': preco, 'categoria': categoria};
   }
 
   static ItemCardapio fromMap(Map<String, dynamic> map, String documentId) {

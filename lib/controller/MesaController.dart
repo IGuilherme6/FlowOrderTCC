@@ -14,7 +14,7 @@ class MesaController {
 
       String? userId = _mesaFirebase.pegarIdUsuarioLogado();
       if (userId == null) {
-        throw Exception('Erro: Nenhum Gerente logado');
+        throw Exception('Erro: Nenhum Usuario logado');
       }
 
       if (mesa.nome.isEmpty) {
@@ -46,15 +46,19 @@ class MesaController {
   }
 
   /// Stream de mesas do gerente (tempo real)
-  Stream<List<Mesa>> streamMesasDoGerente() {
+  Stream<List<Mesa>> streamMesas() async*{
     String? userId = _mesaFirebase.pegarIdUsuarioLogado();
     if (userId == null) {
-      return Stream.value([]);
+      yield [];
+      return;
     }
 
-    return _mesaFirebase.streamMesas(userId).map(
-          (snapshot) => _mesaFirebase.querySnapshotParaMesas(snapshot),
-    );
+    Stream<QuerySnapshot<Object?>> mesasStream = await _mesaFirebase.streamMesas(userId);
+
+    await for (QuerySnapshot snapshot in mesasStream) {
+      List<Mesa> mesas = _mesaFirebase.querySnapshotParaMesas(snapshot);
+      yield mesas;
+    }
   }
 
   /// Deletar mesa
@@ -91,23 +95,6 @@ class MesaController {
     }
   }
 
-  /// Buscar mesa específica
-  Future<Mesa?> buscarMesaPorUid(String mesaUid) async {
-    String? userId = _mesaFirebase.pegarIdUsuarioLogado();
-    if (userId == null) {
-      throw Exception('Erro: Nenhum Gerente logado');
-    }
-
-    try {
-      DocumentSnapshot doc = await _mesaFirebase.buscarMesaPorUid(userId, mesaUid);
-      if (doc.exists) {
-        return _mesaFirebase.documentParaMesa(doc);
-      }
-      return null;
-    } catch (e) {
-      throw Exception('Erro ao buscar mesa: ${e.toString()}');
-    }
-  }
 
   /// Verificar se mesa já existe
   Future<bool> verificarMesaExistente(int numero) async {

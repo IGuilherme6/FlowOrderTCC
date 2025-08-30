@@ -22,6 +22,7 @@ class Barralateral extends StatelessWidget {
     LoginFirebase loginFirebase = LoginFirebase();
     loginFirebase.logout();
   }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -115,14 +116,11 @@ class Barralateral extends StatelessWidget {
               ],
             ),
           ),
-          Container(//botão de sair
+          Container(
+            //botão de sair
             margin: const EdgeInsets.all(8),
             child: ListTile(
-              leading: Icon(
-                Icons.logout,
-                color: Cores.textGray,
-                size: 20,
-              ),
+              leading: Icon(Icons.logout, color: Cores.textGray, size: 20),
               title: Text(
                 'Deslogar/Logout',
                 style: TextStyle(
@@ -202,7 +200,11 @@ class Barralateral extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: ListTile(
-        leading: Icon(icon, color: isActive ? Cores.textWhite : Cores.textGray, size: 20),
+        leading: Icon(
+          icon,
+          color: isActive ? Cores.textWhite : Cores.textGray,
+          size: 20,
+        ),
         title: Text(
           title,
           style: TextStyle(

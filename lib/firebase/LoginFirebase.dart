@@ -125,7 +125,6 @@ class LoginFirebase {
 
       await _auth.sendPasswordResetEmail(email: email.trim());
       return 'E-mail de recuperação enviado com sucesso! Verifique sua caixa de entrada e spam.';
-
     } on FirebaseAuthException catch (e) {
       return _handleFirebaseError(e.code);
     } catch (e) {

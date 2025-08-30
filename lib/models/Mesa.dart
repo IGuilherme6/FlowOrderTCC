@@ -3,9 +3,5 @@ class Mesa {
   String nome;
   int numero;
 
-  Mesa({
-    this.uid = '',
-    this.nome = '',
-    this.numero = 0,
-  });
+  Mesa({this.uid = '', this.nome = '', this.numero = 0});
 }

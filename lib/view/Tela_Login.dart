@@ -55,18 +55,18 @@ class _telalogin extends State<Tela_Login> {
   Future<void> _MudarSenha(String email) async {
     try {
       if (email.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Por favor, insira seu e-mail')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Por favor, insira seu e-mail')));
         return;
       }
 
       LoginFirebase loginFirebase = LoginFirebase();
       String resultado = await loginFirebase.resetPassword(email);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(resultado)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(resultado)));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro ao enviar e-mail de redefinição: $e')),
@@ -286,7 +286,7 @@ class _telalogin extends State<Tela_Login> {
                         width: double.infinity,
                         height: 55,
                         child: ElevatedButton(
-                          onPressed:  _isLoading ? null : _login,
+                          onPressed: _isLoading ? null : _login,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red[900],
                             shape: RoundedRectangleBorder(
@@ -309,7 +309,8 @@ class _telalogin extends State<Tela_Login> {
                                   ),
                                 ),
                         ),
-                      ), Align(
+                      ),
+                      Align(
                         alignment: Alignment.centerRight,
                         child: GestureDetector(
                           onTap: () => _MudarSenha(_emailController.text),
@@ -324,7 +325,6 @@ class _telalogin extends State<Tela_Login> {
                           ),
                         ),
                       ),
-
 
                       SizedBox(height: 30),
                       Row(

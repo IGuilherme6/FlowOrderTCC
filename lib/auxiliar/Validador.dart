@@ -1,6 +1,6 @@
 import 'package:floworder/controller/UsuarioController.dart';
 
-class Validador  {
+class Validador {
   UsuarioController usuarioController = UsuarioController();
 
   bool validarCPF(String cpf) {
@@ -43,7 +43,6 @@ class Validador  {
     return emailRegex.hasMatch(email);
   }
 
-
   bool validarSenha(String senha) {
     return senha.length >= 6;
   }
@@ -57,6 +56,4 @@ class Validador  {
     final telefoneRegex = RegExp(r'^\d{10,11}$');
     return telefoneRegex.hasMatch(telefone);
   }
-
-
 }

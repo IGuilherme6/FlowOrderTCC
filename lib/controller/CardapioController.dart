@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../firebase/CardapioFirebase.dart';
+import '../firebase/UsuarioFirebase.dart';
 import '../models/Cardapio.dart';
 
 class CardapioController {
   final CardapioFirebase _cardapioFirebase = CardapioFirebase();
+
+
 
   /// Cadastrar cardápio
   Future<String> cadastrarCardapio(Cardapio cardapio) async {
@@ -12,24 +15,26 @@ class CardapioController {
         return 'Erro: Nome do cardápio não pode estar vazio';
       }
 
-
-      String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+      String? userId = await _cardapioFirebase.pegarIdUsuarioLogado();
       if (userId == null) {
         throw Exception('Erro: Nenhum Gerente logado');
       }
 
-      String cardapioId = await _cardapioFirebase.adicionarCardapio(userId, cardapio);
+      String cardapioId = await _cardapioFirebase.adicionarCardapio(
+        userId,
+        cardapio,
+      );
       cardapio.uid = cardapioId;
 
       return 'Cardápio cadastrado com sucesso';
     } catch (e) {
-      throw Exception('Erro ao cadastrar cardápio: ${e.toString()}');
+      throw Exception('Erro ao cadastrar cardápio');
     }
   }
 
   /// Buscar cardápios do gerente logado (snapshot único)
   Future<List<Cardapio>> buscarCardapios() async {
-    String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+    String? userId = await _cardapioFirebase.verificarGerenteUid();
     if (userId == null) {
       throw Exception('Erro: Nenhum Gerente logado');
     }
@@ -47,8 +52,8 @@ class CardapioController {
   }
 
   /// Stream de cardápios do gerente (tempo real)
-  Stream<List<Cardapio>> buscarCardapioTempoReal() {
-    String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+  Future<Stream<List<Cardapio>>> buscarCardapioTempoReal() async {
+    String? userId = await _cardapioFirebase.verificarGerenteUid();
     if (userId == null) {
       return Stream.value([]);
     }
@@ -61,11 +66,9 @@ class CardapioController {
     });
   }
 
-
-
   /// Atualizar cardápio
   Future<String> atualizarCardapio(Cardapio cardapio) async {
-    String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+    String? userId = await _cardapioFirebase.verificarGerenteUid();
     if (userId == null) {
       throw Exception('Erro: Nenhum Gerente logado');
     }
@@ -84,7 +87,7 @@ class CardapioController {
 
   /// Deletar cardápio
   Future<String> deletarCardapio(String cardapioUid) async {
-    String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+    String? userId = await _cardapioFirebase.pegarIdUsuarioLogado();
     if (userId == null) {
       throw Exception('Erro: Nenhum Gerente logado');
     }
@@ -93,13 +96,13 @@ class CardapioController {
       await _cardapioFirebase.excluirCardapio(userId, cardapioUid);
       return 'Cardápio deletado com sucesso';
     } catch (e) {
-      throw Exception('Erro ao deletar cardápio: ${e.toString()}');
+      throw Exception('Erro ao deletar cardápio:');
     }
   }
 
   /// Suspender ou reativar cardápio
   Future<String> suspenderCardapio(String cardapioUid, bool suspender) async {
-    String? userId = _cardapioFirebase.pegarIdUsuarioLogado();
+    String? userId = await _cardapioFirebase.verificarGerenteUid();
     if (userId == null) {
       throw Exception('Erro: Nenhum Gerente logado');
     }
@@ -113,5 +116,4 @@ class CardapioController {
       throw Exception('Erro ao alterar status do cardápio: ${e.toString()}');
     }
   }
-
 }

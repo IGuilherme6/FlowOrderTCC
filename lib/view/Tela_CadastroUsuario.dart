@@ -33,7 +33,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
   List<String> _cargos = ['Garçom', 'Atendente', 'Cozinheiro'];
 
   Future<void> _cadastrarFuncionario(funcionario) async {
-    String mensagem = await usuarioController.cadastrarFuncionario(funcionario);
+    String mensagem = await usuarioController.cadastrarUsuario(funcionario);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(await mensagem), backgroundColor: Colors.blue),
     );
