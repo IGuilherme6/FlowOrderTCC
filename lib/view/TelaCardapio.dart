@@ -46,8 +46,13 @@ class _TelaCardapioState extends State<TelaCardapio> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Cores.cardBlack,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Text('Adicionar Item', style: TextStyle(color: Cores.textWhite)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: Text(
+            'Adicionar Item',
+            style: TextStyle(color: Cores.textWhite),
+          ),
           content: SingleChildScrollView(
             child: Column(
               children: [
@@ -101,7 +106,10 @@ class _TelaCardapioState extends State<TelaCardapio> {
                   items: categorias.where((c) => c != 'Todos').map((cat) {
                     return DropdownMenuItem(
                       value: cat,
-                      child: Text(cat, style: TextStyle(color: Cores.textWhite)),
+                      child: Text(
+                        cat,
+                        style: TextStyle(color: Cores.textWhite),
+                      ),
                     );
                   }).toList(),
                   onChanged: (value) => categoriaSelecionada = value,
@@ -123,7 +131,9 @@ class _TelaCardapioState extends State<TelaCardapio> {
 
                   final novoCardapio = Cardapio(
                     nome: nome.isNotEmpty ? nome : 'Item sem nome',
-                    descricao: descricao.isNotEmpty ? descricao : 'Descrição não informada',
+                    descricao: descricao.isNotEmpty
+                        ? descricao
+                        : 'Descrição não informada',
                     preco: preco ?? 0.0,
                     categoria: categoriaSelecionada ?? 'Outros',
                   );
@@ -131,13 +141,19 @@ class _TelaCardapioState extends State<TelaCardapio> {
                   await _controller.cadastrarCardapio(novoCardapio);
 
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Item adicionado com sucesso!')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Item adicionado com sucesso!')),
+                  );
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(e.toString())));
                 }
               },
               child: Text('Salvar'),
-              style: ElevatedButton.styleFrom(backgroundColor: Cores.primaryRed),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Cores.primaryRed,
+              ),
             ),
           ],
         );
@@ -148,7 +164,9 @@ class _TelaCardapioState extends State<TelaCardapio> {
   void _mostrarDialogEditarItem(Cardapio cardapio) {
     final nomeController = TextEditingController(text: cardapio.nome);
     final descricaoController = TextEditingController(text: cardapio.descricao);
-    final precoController = TextEditingController(text: cardapio.preco.toString());
+    final precoController = TextEditingController(
+      text: cardapio.preco.toString(),
+    );
     String? categoriaSelecionada = cardapio.categoria;
 
     showDialog(
@@ -156,13 +174,21 @@ class _TelaCardapioState extends State<TelaCardapio> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Cores.cardBlack,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           title: Text('Editar Item', style: TextStyle(color: Cores.textWhite)),
           content: SingleChildScrollView(
             child: Column(
               children: [
-                TextField(controller: nomeController, style: TextStyle(color: Cores.textWhite)),
-                TextField(controller: descricaoController, style: TextStyle(color: Cores.textWhite)),
+                TextField(
+                  controller: nomeController,
+                  style: TextStyle(color: Cores.textWhite),
+                ),
+                TextField(
+                  controller: descricaoController,
+                  style: TextStyle(color: Cores.textWhite),
+                ),
                 TextField(
                   controller: precoController,
                   style: TextStyle(color: Cores.textWhite),
@@ -182,7 +208,10 @@ class _TelaCardapioState extends State<TelaCardapio> {
                   items: categorias.where((c) => c != 'Todos').map((cat) {
                     return DropdownMenuItem(
                       value: cat,
-                      child: Text(cat, style: TextStyle(color: Cores.textWhite)),
+                      child: Text(
+                        cat,
+                        style: TextStyle(color: Cores.textWhite),
+                      ),
                     );
                   }).toList(),
                   onChanged: (value) => categoriaSelecionada = value,
@@ -191,20 +220,28 @@ class _TelaCardapioState extends State<TelaCardapio> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancelar'),
+            ),
             ElevatedButton(
               onPressed: () async {
                 try {
                   cardapio.nome = nomeController.text.trim();
                   cardapio.descricao = descricaoController.text.trim();
-                  cardapio.preco = double.tryParse(precoController.text.trim()) ?? 0.0;
+                  cardapio.preco =
+                      double.tryParse(precoController.text.trim()) ?? 0.0;
                   cardapio.categoria = categoriaSelecionada ?? 'Outros';
 
                   await _controller.atualizarCardapio(cardapio);
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Item atualizado com sucesso!')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Item atualizado com sucesso!')),
+                  );
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(e.toString())));
                 }
               },
               child: Text('Salvar'),
@@ -223,15 +260,22 @@ class _TelaCardapioState extends State<TelaCardapio> {
           title: Text('Confirmar exclusão'),
           content: Text('Deseja realmente excluir este item?'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancelar'),
+            ),
             ElevatedButton(
               onPressed: () async {
                 try {
                   await _controller.deletarCardapio(cardapioId);
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Item excluído com sucesso!')));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Item excluído com sucesso!')),
+                  );
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(e.toString())));
                 }
               },
               child: Text('Excluir'),
@@ -245,15 +289,20 @@ class _TelaCardapioState extends State<TelaCardapio> {
   void _alternarSuspensao(Cardapio cardapio) async {
     try {
       await _controller.suspenderCardapio(cardapio.uid, !cardapio.ativo);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(cardapio.ativo ? 'Item suspenso' : 'Item reativado')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(cardapio.ativo ? 'Item suspenso' : 'Item reativado'),
+        ),
+      );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+  Widget build(BuildContext context) => Scaffold(
       backgroundColor: Cores.backgroundBlack,
       body: Row(
         children: [
@@ -264,8 +313,14 @@ class _TelaCardapioState extends State<TelaCardapio> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Gerenciamento de Cardápio',
-                      style: TextStyle(color: Cores.textWhite, fontSize: 32, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Gerenciamento de Cardápio',
+                    style: TextStyle(
+                      color: Cores.textWhite,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   SizedBox(height: 24),
 
                   // Filtros
@@ -279,12 +334,16 @@ class _TelaCardapioState extends State<TelaCardapio> {
                           decoration: InputDecoration(
                             hintText: 'Buscar item...',
                             hintStyle: TextStyle(color: Cores.textGray),
-                            prefixIcon: Icon(Icons.search, color: Cores.textGray),
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: Cores.textGray,
+                            ),
                             filled: true,
                             fillColor: Cores.cardBlack,
                             border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Cores.borderGray)),
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Cores.borderGray),
+                            ),
                           ),
                         ),
                       ),
@@ -296,10 +355,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
                         dropdownColor: Cores.cardBlack,
                         style: TextStyle(color: Cores.textWhite),
                         items: categorias.map((cat) {
-                          return DropdownMenuItem(
-                            value: cat,
-                            child: Text(cat),
-                          );
+                          return DropdownMenuItem(value: cat, child: Text(cat));
                         }).toList(),
                         onChanged: _filtrarPorCategoria,
                       ),
@@ -312,9 +368,14 @@ class _TelaCardapioState extends State<TelaCardapio> {
                         label: Text('Adicionar Item'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Cores.primaryRed,
-                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
                           textStyle: TextStyle(fontSize: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ],
@@ -323,122 +384,174 @@ class _TelaCardapioState extends State<TelaCardapio> {
                   SizedBox(height: 24),
 
                   // Stream de cardápios
-                  StreamBuilder<List<Cardapio>>(
-                    stream: _controller.buscarCardapioTempoReal(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
+                  // Replace the existing StreamBuilder section with this:
+
+                  FutureBuilder<Stream<List<Cardapio>>>(
+                    future: _controller.buscarCardapioTempoReal(),
+                    builder: (context, futureSnapshot) {
+                      if (futureSnapshot.connectionState == ConnectionState.waiting) {
                         return Center(child: CircularProgressIndicator());
                       }
-                      if (snapshot.hasError) {
-                        return Text('Erro: ${snapshot.error}', style: TextStyle(color: Colors.red));
+                      if (futureSnapshot.hasError) {
+                        return Text(
+                          'Erro: ${futureSnapshot.error}',
+                          style: TextStyle(color: Colors.red),
+                        );
+                      }
+                      if (!futureSnapshot.hasData) {
+                        return Text(
+                          'Stream não disponível',
+                          style: TextStyle(color: Colors.red),
+                        );
                       }
 
-                      final lista = snapshot.data ?? [];
-                      final filtrados = lista.where((item) {
-                        final textoOk = _busca.trim().isEmpty ||
-                            item.nome.toLowerCase().contains(_busca.toLowerCase()) ||
-                            item.descricao.toLowerCase().contains(_busca.toLowerCase());
+                      return StreamBuilder<List<Cardapio>>(
+                        stream: futureSnapshot.data!,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return Center(child: CircularProgressIndicator());
+                          }
+                          if (snapshot.hasError) {
+                            return Text(
+                              'Erro: ${snapshot.error}',
+                              style: TextStyle(color: Colors.red),
+                            );
+                          }
 
-                        final categoriaOk = _categoriaFiltro == null || item.categoria == _categoriaFiltro;
+                          final lista = snapshot.data ?? [];
+                          final filtrados = lista.where((item) {
+                            final textoOk =
+                                _busca.trim().isEmpty ||
+                                    item.nome.toLowerCase().contains(
+                                      _busca.toLowerCase(),
+                                    ) ||
+                                    item.descricao.toLowerCase().contains(
+                                      _busca.toLowerCase(),
+                                    );
 
-                        return textoOk && categoriaOk;
-                      }).toList();
+                            final categoriaOk =
+                                _categoriaFiltro == null ||
+                                    item.categoria == _categoriaFiltro;
 
-                      if (filtrados.isEmpty) {
-                        return Text('Nenhum item encontrado.', style: TextStyle(color: Cores.textGray));
-                      }
+                            return textoOk && categoriaOk;
+                          }).toList();
 
-                      final Map<String, List<Cardapio>> agrupadoPorCategoria = {};
-                      for (var item in filtrados) {
-                        agrupadoPorCategoria.putIfAbsent(item.categoria, () => []).add(item);
-                      }
+                          if (filtrados.isEmpty) {
+                            return Text(
+                              'Nenhum item encontrado.',
+                              style: TextStyle(color: Cores.textGray),
+                            );
+                          }
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: agrupadoPorCategoria.entries.map((entry) {
+                          final Map<String, List<Cardapio>> agrupadoPorCategoria = {};
+                          for (var item in filtrados) {
+                            agrupadoPorCategoria
+                                .putIfAbsent(item.categoria, () => [])
+                                .add(item);
+                          }
+
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Exibe título da categoria só se não estiver filtrando
-                              if (_categoriaFiltro == null)
-                                Text(entry.key,
-                                    style: TextStyle(
+                            children: agrupadoPorCategoria.entries.map((entry) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Exibe título da categoria só se não estiver filtrando
+                                  if (_categoriaFiltro == null)
+                                    Text(
+                                      entry.key,
+                                      style: TextStyle(
                                         color: Cores.textWhite,
                                         fontSize: 24,
-                                        fontWeight: FontWeight.bold)),
-                              if (_categoriaFiltro == null) SizedBox(height: 12),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  if (_categoriaFiltro == null)
+                                    SizedBox(height: 12),
 
-                              LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return Wrap(
-                                    spacing: 16,
-                                    runSpacing: 16,
-                                    children: entry.value.map((cardapio) {
-                                      return Container(
-                                        width: constraints.maxWidth > 900
-                                            ? constraints.maxWidth / 3 - 20
-                                            : constraints.maxWidth,
-                                        padding: EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          color: Cores.cardBlack,
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: Cores.borderGray),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(cardapio.nome,
-                                                style: TextStyle(
+                                  LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      return Wrap(
+                                        spacing: 16,
+                                        runSpacing: 16,
+                                        children: entry.value.map((cardapio) {
+                                          return Container(
+                                            width: constraints.maxWidth > 900
+                                                ? constraints.maxWidth / 3 - 20
+                                                : constraints.maxWidth,
+                                            padding: EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              color: Cores.cardBlack,
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: Cores.borderGray),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  cardapio.nome,
+                                                  style: TextStyle(
                                                     color: Cores.textWhite,
                                                     fontSize: 20,
-                                                    fontWeight: FontWeight.bold)),
-                                            SizedBox(height: 8),
-                                            Text(cardapio.descricao,
-                                                style: TextStyle(color: Cores.textGray)),
-                                            SizedBox(height: 8),
-                                            Text('R\$ ${cardapio.preco.toStringAsFixed(2)}',
-                                                style: TextStyle(color: Cores.textWhite)),
-                                            SizedBox(height: 8),
-                                            Text(cardapio.ativo ? 'Ativo' : 'Suspenso',
-                                                style: TextStyle(
-                                                    color: cardapio.ativo ? Colors.green : Colors.red)),
-                                            SizedBox(height: 16),
-                                            Row(
-                                              mainAxisAlignment: MainAxisAlignment.end,
-                                              children: [
-                                                IconButton(
-                                                    icon: Icon(Icons.edit, color: Cores.lightRed),
-                                                    onPressed: () =>
-                                                        _mostrarDialogEditarItem(cardapio)),
-                                                IconButton(
-                                                  icon: Icon(
-                                                      cardapio.ativo
-                                                          ? Icons.block
-                                                          : Icons.check_circle,
-                                                      color: Colors.amber),
-                                                  onPressed: () =>
-                                                      _alternarSuspensao(cardapio),
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
-                                                IconButton(
-                                                    icon: Icon(Icons.delete, color: Colors.red),
-                                                    onPressed: () =>
-                                                        _mostrarDialogExcluirItem(cardapio.uid)),
+                                                SizedBox(height: 8),
+                                                Text(
+                                                  cardapio.descricao,
+                                                  style: TextStyle(color: Cores.textGray),
+                                                ),
+                                                SizedBox(height: 8),
+                                                Text(
+                                                  'R\$ ${cardapio.preco.toStringAsFixed(2)}',
+                                                  style: TextStyle(color: Cores.textWhite),
+                                                ),
+                                                SizedBox(height: 8),
+                                                Text(
+                                                  cardapio.ativo ? 'Ativo' : 'Suspenso',
+                                                  style: TextStyle(
+                                                    color: cardapio.ativo
+                                                        ? Colors.green
+                                                        : Colors.red,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 16),
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.end,
+                                                  children: [
+                                                    IconButton(
+                                                      icon: Icon(Icons.edit, color: Cores.lightRed),
+                                                      onPressed: () => _mostrarDialogEditarItem(cardapio),
+                                                    ),
+                                                    IconButton(
+                                                      icon: Icon(
+                                                        cardapio.ativo ? Icons.block : Icons.check_circle,
+                                                        color: Colors.amber,
+                                                      ),
+                                                      onPressed: () => _alternarSuspensao(cardapio),
+                                                    ),
+                                                    IconButton(
+                                                      icon: Icon(Icons.delete, color: Colors.red),
+                                                      onPressed: () => _mostrarDialogExcluirItem(cardapio.uid),
+                                                    ),
+                                                  ],
+                                                ),
                                               ],
                                             ),
-                                          ],
-                                        ),
+                                          );
+                                        }).toList(),
                                       );
-                                    }).toList(),
-                                  );
-                                },
-                              ),
-                              SizedBox(height: 24),
-                            ],
+                                    },
+                                  ),
+                                  SizedBox(height: 24),
+                                ],
+                              );
+                            }).toList(),
                           );
-                        }).toList(),
+                        },
                       );
                     },
-                  ),
+                  )
                 ],
               ),
             ),
@@ -446,5 +559,4 @@ class _TelaCardapioState extends State<TelaCardapio> {
         ],
       ),
     );
-  }
 }

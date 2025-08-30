@@ -39,7 +39,8 @@ class _TelaPedidosState extends State<TelaPedidos> {
                     child: StreamBuilder<List<Pedido>>(
                       stream: _controller.ouvirPedidosTempoReal(),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return Center(child: CircularProgressIndicator());
                         }
                         if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -81,29 +82,38 @@ class _TelaPedidosState extends State<TelaPedidos> {
                                     style: TextStyle(color: Cores.textGray),
                                   ),
                                   SizedBox(height: 8),
-                                  Text('Itens:', style: TextStyle(color: Cores.textWhite)),
-                                  ...pedido.itens.map((item) => Text(
-                                    '- ${item.nome} (R\$ ${item.preco.toStringAsFixed(2)})',
-                                    style: TextStyle(color: Cores.textGray),
-                                  )),
+                                  Text(
+                                    'Itens:',
+                                    style: TextStyle(color: Cores.textWhite),
+                                  ),
+                                  ...pedido.itens.map(
+                                    (item) => Text(
+                                      '- ${item.nome} (R\$ ${item.preco.toStringAsFixed(2)})',
+                                      style: TextStyle(color: Cores.textGray),
+                                    ),
+                                  ),
                                   SizedBox(height: 12),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: Pedido.statusOpcoes.map((status) {
                                       return Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                        ),
                                         child: ElevatedButton(
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: pedido.statusAtual == status
+                                            backgroundColor:
+                                                pedido.statusAtual == status
                                                 ? Cores.primaryRed
                                                 : Cores.darkRed,
                                           ),
                                           onPressed: () async {
                                             if (pedido.uid != null) {
-                                              await _controller.atualizarStatusPedido(
-                                                pedido.uid!,
-                                                status,
-                                              );
+                                              await _controller
+                                                  .atualizarStatusPedido(
+                                                    pedido.uid!,
+                                                    status,
+                                                  );
                                             }
                                           },
                                           child: Text(status),

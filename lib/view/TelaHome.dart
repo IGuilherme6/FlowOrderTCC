@@ -25,7 +25,9 @@ class _TelaHome extends State<TelaHome> {
                     child: Image.asset(
                       'logo/Icone_FlowOrder.png',
                       fit: BoxFit.contain,
-                      width: MediaQuery.of(context).size.width * 0.4, // 40% da largura
+                      width:
+                          MediaQuery.of(context).size.width *
+                          0.4, // 40% da largura
                     ),
                   ),
                 ),

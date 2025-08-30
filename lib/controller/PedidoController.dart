@@ -6,7 +6,7 @@ class PedidoController {
   late final CollectionReference _pedidosRef;
 
   PedidoController({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance {
+    : _firestore = firestore ?? FirebaseFirestore.instance {
     _pedidosRef = _firestore.collection('pedidos');
   }
 

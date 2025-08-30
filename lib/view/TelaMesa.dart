@@ -24,7 +24,10 @@ class _TelaMesaState extends State<TelaMesa> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao excluir: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Erro ao excluir: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -46,16 +49,21 @@ class _TelaMesaState extends State<TelaMesa> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao cadastrar: $e'), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('Erro ao cadastrar: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
   Future<void> _editarMesaDialog(Mesa mesa) async {
-    TextEditingController nomeEditController =
-    TextEditingController(text: mesa.nome);
-    TextEditingController numeroEditController =
-    TextEditingController(text: mesa.numero.toString());
+    TextEditingController nomeEditController = TextEditingController(
+      text: mesa.nome,
+    );
+    TextEditingController numeroEditController = TextEditingController(
+      text: mesa.numero.toString(),
+    );
 
     await showDialog(
       context: context,
@@ -92,19 +100,28 @@ class _TelaMesaState extends State<TelaMesa> {
               child: Text('Cancelar', style: TextStyle(color: Cores.textGray)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Cores.primaryRed),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Cores.primaryRed,
+              ),
               onPressed: () async {
                 try {
                   mesa.nome = nomeEditController.text;
-                  mesa.numero = int.tryParse(numeroEditController.text) ?? mesa.numero;
+                  mesa.numero =
+                      int.tryParse(numeroEditController.text) ?? mesa.numero;
                   await _mesaController.atualizarMesa(mesa);
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Mesa atualizada com sucesso'), backgroundColor: Colors.green),
+                    SnackBar(
+                      content: Text('Mesa atualizada com sucesso'),
+                      backgroundColor: Colors.green,
+                    ),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Erro ao atualizar: $e'), backgroundColor: Colors.red),
+                    SnackBar(
+                      content: Text('Erro ao atualizar: $e'),
+                      backgroundColor: Colors.red,
+                    ),
                   );
                 }
               },
@@ -184,43 +201,117 @@ class _TelaMesaState extends State<TelaMesa> {
                               ),
                               SizedBox(height: 16),
                               StreamBuilder<List<Mesa>>(
-                                stream: _mesaController.streamMesasDoGerente(),
+                                stream: _mesaController.streamMesas(),
                                 builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) {
-                                    return Center(child: CircularProgressIndicator());
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return Center(
+                                      child: CircularProgressIndicator(),
+                                    );
                                   }
                                   if (snapshot.hasError) {
-                                    return Text('Erro: ${snapshot.error}', style: TextStyle(color: Colors.red));
+                                    return Text(
+                                      'Erro: ${snapshot.error}',
+                                      style: TextStyle(color: Colors.red),
+                                    );
                                   }
                                   final mesas = snapshot.data ?? [];
                                   if (mesas.isEmpty) {
-                                    return Text('Nenhuma mesa cadastrada', style: TextStyle(color: Cores.textGray));
+                                    return Text(
+                                      'Nenhuma mesa cadastrada',
+                                      style: TextStyle(color: Cores.textGray),
+                                    );
                                   }
                                   return SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
                                     child: DataTable(
                                       columnSpacing: 40,
-                                      headingRowColor: MaterialStateColor.resolveWith((states) => Cores.darkRed),
+                                      headingRowColor:
+                                          MaterialStateColor.resolveWith(
+                                            (states) => Cores.darkRed,
+                                          ),
                                       columns: [
-                                        DataColumn(label: Text('Número', style: TextStyle(color: Cores.textWhite))),
-                                        DataColumn(label: Text('Nome', style: TextStyle(color: Cores.textWhite))),
-                                        DataColumn(label: Text('Editar', style: TextStyle(color: Cores.textWhite))),
-                                        DataColumn(label: Text('Deletar', style: TextStyle(color: Cores.textWhite))),
+                                        DataColumn(
+                                          label: Text(
+                                            'Número',
+                                            style: TextStyle(
+                                              color: Cores.textWhite,
+                                            ),
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            'Nome',
+                                            style: TextStyle(
+                                              color: Cores.textWhite,
+                                            ),
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            'Editar',
+                                            style: TextStyle(
+                                              color: Cores.textWhite,
+                                            ),
+                                          ),
+                                        ),
+                                        DataColumn(
+                                          label: Text(
+                                            'Deletar',
+                                            style: TextStyle(
+                                              color: Cores.textWhite,
+                                            ),
+                                          ),
+                                        ),
                                       ],
-                                      rows: mesas.map((mesa) => DataRow(cells: [
-                                        DataCell(Text(mesa.numero.toString(), style: TextStyle(color: Cores.textWhite))),
-                                        DataCell(Text(mesa.nome.isNotEmpty ? mesa.nome : 'Mesa ${mesa.numero}', style: TextStyle(color: Cores.textWhite))),
-                                        DataCell(IconButton(
-                                          icon: Icon(Icons.edit, color: Colors.amber),
-                                          tooltip: 'Editar mesa',
-                                          onPressed: () => _editarMesaDialog(mesa),
-                                        )),
-                                        DataCell(IconButton(
-                                          icon: Icon(Icons.delete_outline, color: Cores.lightRed),
-                                          tooltip: 'Excluir mesa',
-                                          onPressed: () => _excluirMesa(mesa.uid),
-                                        )),
-                                      ])).toList(),
+                                      rows: mesas
+                                          .map(
+                                            (mesa) => DataRow(
+                                              cells: [
+                                                DataCell(
+                                                  Text(
+                                                    mesa.numero.toString(),
+                                                    style: TextStyle(
+                                                      color: Cores.textWhite,
+                                                    ),
+                                                  ),
+                                                ),
+                                                DataCell(
+                                                  Text(
+                                                    mesa.nome.isNotEmpty
+                                                        ? mesa.nome
+                                                        : 'Mesa ${mesa.numero}',
+                                                    style: TextStyle(
+                                                      color: Cores.textWhite,
+                                                    ),
+                                                  ),
+                                                ),
+                                                DataCell(
+                                                  IconButton(
+                                                    icon: Icon(
+                                                      Icons.edit,
+                                                      color: Colors.amber,
+                                                    ),
+                                                    tooltip: 'Editar mesa',
+                                                    onPressed: () =>
+                                                        _editarMesaDialog(mesa),
+                                                  ),
+                                                ),
+                                                DataCell(
+                                                  IconButton(
+                                                    icon: Icon(
+                                                      Icons.delete_outline,
+                                                      color: Cores.lightRed,
+                                                    ),
+                                                    tooltip: 'Excluir mesa',
+                                                    onPressed: () =>
+                                                        _excluirMesa(mesa.uid),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                          .toList(),
                                     ),
                                   );
                                 },
@@ -275,15 +366,24 @@ class _TelaMesaState extends State<TelaMesa> {
                                       controller: _numeroController,
                                       style: TextStyle(color: Cores.textWhite),
                                       keyboardType: TextInputType.number,
-                                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
                                       decoration: InputDecoration(
                                         labelText: 'Número da Mesa',
-                                        labelStyle: TextStyle(color: Cores.textGray),
+                                        labelStyle: TextStyle(
+                                          color: Cores.textGray,
+                                        ),
                                         border: OutlineInputBorder(),
-                                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Cores.borderGray)),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Cores.borderGray,
+                                          ),
+                                        ),
                                       ),
                                       validator: (value) {
-                                        if (value == null || value.trim().isEmpty) {
+                                        if (value == null ||
+                                            value.trim().isEmpty) {
                                           return 'Número obrigatório';
                                         }
                                         return null;
@@ -295,9 +395,15 @@ class _TelaMesaState extends State<TelaMesa> {
                                       style: TextStyle(color: Cores.textWhite),
                                       decoration: InputDecoration(
                                         labelText: 'Nome da Mesa (opcional)',
-                                        labelStyle: TextStyle(color: Cores.textGray),
+                                        labelStyle: TextStyle(
+                                          color: Cores.textGray,
+                                        ),
                                         border: OutlineInputBorder(),
-                                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Cores.borderGray)),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color: Cores.borderGray,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                     SizedBox(height: 20),
@@ -306,12 +412,30 @@ class _TelaMesaState extends State<TelaMesa> {
                                       child: ElevatedButton.icon(
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Cores.primaryRed,
-                                          padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                          padding: EdgeInsets.symmetric(
+                                            vertical: 16,
+                                            horizontal: 24,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
                                         ),
-                                        icon: Icon(Icons.check, color: Cores.textWhite),
-                                        label: Text('Cadastrar Mesa', style: TextStyle(color: Cores.textWhite)),
-                                        onPressed: () => _adicionarMesa(_nomeController.text, _numeroController.text),
+                                        icon: Icon(
+                                          Icons.check,
+                                          color: Cores.textWhite,
+                                        ),
+                                        label: Text(
+                                          'Cadastrar Mesa',
+                                          style: TextStyle(
+                                            color: Cores.textWhite,
+                                          ),
+                                        ),
+                                        onPressed: () => _adicionarMesa(
+                                          _nomeController.text,
+                                          _numeroController.text,
+                                        ),
                                       ),
                                     ),
                                   ],

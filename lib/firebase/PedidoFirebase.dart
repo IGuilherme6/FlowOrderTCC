@@ -40,7 +40,9 @@ class PedidoFirebase {
     try {
       QuerySnapshot snapshot = await _pedidosRef.get();
       return snapshot.docs
-          .map((doc) => Pedido.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .map(
+            (doc) => Pedido.fromMap(doc.data() as Map<String, dynamic>, doc.id),
+          )
           .toList();
     } catch (e) {
       throw Exception('Erro ao buscar pedidos: $e');

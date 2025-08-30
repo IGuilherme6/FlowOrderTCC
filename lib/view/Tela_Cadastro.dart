@@ -23,7 +23,6 @@ class _TelaCadastro extends State<Tela_Cadastro> {
   Usuario usuario = Usuario();
   Validador validar = Validador();
 
-
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -41,17 +40,16 @@ class _TelaCadastro extends State<Tela_Cadastro> {
       _isLoading = true;
     });
     UsuarioController usuarioController = UsuarioController();
-    String mensagem = await usuarioController.cadastrarGerente(usuario);
+    String mensagem = await usuarioController.cadastrarUsuario(usuario);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(await mensagem), backgroundColor: Colors.blue),
     );
     if (mensagem == 'Usuário cadastrado com sucesso') {
-      Navigator.pushReplacementNamed(context, '/funcionarios'); //mudar depois
+      setState(() {
+        _isLoading = false;
+      });
+      Navigator.pushReplacementNamed(context, '/home');
     }
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   @override
@@ -301,7 +299,7 @@ class _TelaCadastro extends State<Tela_Cadastro> {
     TextInputType keyboardType = TextInputType.text,
     Widget? suffixIcon,
     String? Function(String?)? validator,
-    List<TextInputFormatter>? inputFormatters
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Container(
       decoration: BoxDecoration(

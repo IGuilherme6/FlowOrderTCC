@@ -5,8 +5,10 @@ import '../models/Usuario.dart';
 class UsuarioController {
   final UsuarioFirebase _usuarioFirebase = UsuarioFirebase();
 
-  /// Cadastro de gerente
-  Future<String> cadastrarGerente(Usuario usuario) async {
+
+
+  /// Cadastro de Usuario
+  Future<String> cadastrarUsuario(Usuario usuario) async {
     try {
       // Verificar se CPF já existe
       if (await _verificarCpfExistente(usuario.cpf)) {
@@ -14,48 +16,12 @@ class UsuarioController {
       }
 
       // Criar usuário no Firebase Auth
-      String userId = await _usuarioFirebase.criarUsuarioAuth(
-        usuario.email,
-        usuario.senha,
-      );
-      // Salvar gerente no Firestore
-      await _usuarioFirebase.salvarGerente(userId, usuario);
 
-      return 'Gerente cadastrado com sucesso';
+      // Salvar no Firestore
+      return await _usuarioFirebase.salvarUsuario(usuario);
+
     } catch (e) {
       return 'Erro ao cadastrar: ${e.toString()}';
-    }
-  }
-
-  /// Cadastro de funcionário
-  Future<String> cadastrarFuncionario(Usuario usuario) async {
-    try {
-      // Verificar se CPF já existe
-      if (await _verificarCpfExistente(usuario.cpf)) {
-        return 'Erro: CPF já cadastrado';
-      }
-
-      // Verificar se há gerente logado
-      String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
-      if (gerenteId == null) return 'Erro: Nenhum gerente logado';
-
-      // Verificar se é gerente
-      if (!await _validarGerente(gerenteId)) {
-        return 'Erro: Apenas gerentes podem cadastrar funcionários';
-      }
-
-      // Criar funcionário no Firebase Auth usando instância secundária
-      String funcionarioId = await _usuarioFirebase.criarUsuarioAuthSecundario(
-        usuario.email,
-        usuario.senha,
-      );
-
-      // Salvar funcionário no Firestore
-      await _usuarioFirebase.salvarFuncionario(gerenteId, funcionarioId, usuario);
-
-      return 'Funcionário cadastrado com sucesso';
-    } catch (e) {
-      return 'Erro ao cadastrar funcionário: ${e.toString()}';
     }
   }
 
@@ -64,8 +30,9 @@ class UsuarioController {
     String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
 
     if (gerenteId == null) {
-      throw Exception('Nenhum gerente logado');
+      throw Exception('Nenhum Usuario logado');
     }
+
 
     return _usuarioFirebase.listarFuncionariosAtivos(gerenteId);
   }
@@ -86,7 +53,7 @@ class UsuarioController {
     String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
     if (gerenteId == null) throw Exception('Nenhum gerente logado');
 
-    return await _usuarioFirebase.atualizarStatusFuncionario(gerenteId, funcionarioId, false);
+    return await _usuarioFirebase.atualizarStatusFuncionario( funcionarioId, false);
   }
 
   /// Ativar funcionário
@@ -94,7 +61,7 @@ class UsuarioController {
     String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
     if (gerenteId == null) throw Exception('Nenhum gerente logado');
 
-    return await _usuarioFirebase.atualizarStatusFuncionario(gerenteId, funcionarioId, true);
+    return await _usuarioFirebase.atualizarStatusFuncionario( funcionarioId, true);
   }
 
   /// Editar funcionário
@@ -118,11 +85,6 @@ class UsuarioController {
         return true;
       }
 
-      // Verificar nos funcionários
-      if (await _usuarioFirebase.verificarCpfExistenteFuncionarios(cpf)) {
-        return true;
-      }
-
       return false;
     } catch (e) {
       return false;
@@ -138,22 +100,6 @@ class UsuarioController {
       return 'Funcioanrio foi apagado com sucesso';
     }catch (e){
       return 'erro ao deletar';
-    }
-
-  }
-
-  /// Validar se o usuário é gerente
-  Future<bool> _validarGerente(String gerenteId) async {
-    try {
-      DocumentSnapshot gerenteDoc = await _usuarioFirebase.buscarGerente(gerenteId);
-
-      if (!gerenteDoc.exists) return false;
-
-      Map<String, dynamic> dadosGerente = gerenteDoc.data() as Map<String, dynamic>;
-      return dadosGerente['cargo'] == 'Gerente';
-    } catch (e) {
-      print('Erro ao validar gerente: $e');
-      return false;
     }
   }
 

@@ -10,7 +10,6 @@ class TelaDashboard extends StatefulWidget {
 }
 
 class _TelaDashboardState extends State<TelaDashboard> {
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

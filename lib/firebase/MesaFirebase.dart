@@ -12,47 +12,71 @@ class MesaFirebase {
   }
 
   /// Adicionar mesa
-  Future<String> adicionarMesa(String gerenteId, Mesa mesa) async {
-    DocumentReference docRef = await _firestore
-        .collection('Gerentes')
-        .doc(gerenteId)
-        .collection('Mesas')
-        .add({
-      'nome': mesa.nome,
-      'numero': mesa.numero,
-      'gerenteId': gerenteId,
-      'criadoEm': FieldValue.serverTimestamp(),
-    });
+  Future<String> adicionarMesa(String Id, Mesa mesa) async {
+    final doc = await  FirebaseFirestore.instance
+        .collection('Usuarios').doc(Id).get();
+    final userData = doc.data() as Map<String, dynamic>?;
+    final cargo = userData?['cargo'] as String?;
 
-    await docRef.update({'uid': docRef.id});
-    return docRef.id;
+    if (cargo == "Gerente") {
+      DocumentReference docRef = await _firestore
+          .collection('Mesas')
+          .add({
+        'nome': mesa.nome,
+        'numero': mesa.numero,
+        'gerenteUid': Id,
+        'criadoEm': FieldValue.serverTimestamp(),
+      });
+
+      await docRef.update({'uid': docRef.id});
+      return docRef.id;
+    } else {
+      final gerenteUid = userData?['gerenteUid'] as String?;
+      DocumentReference docRef = await _firestore
+          .collection('Mesas')
+          .add({
+        'nome': mesa.nome,
+        'numero': mesa.numero,
+        'gerenteUid': gerenteUid,
+        'criadoEm': FieldValue.serverTimestamp(),
+      });
+
+      await docRef.update({'uid': docRef.id});
+      return docRef.id;
+    }
+
   }
 
   /// Buscar mesas (snapshot único)
-  Future<QuerySnapshot> buscarMesas(String gerenteId) async {
+  Future<QuerySnapshot> buscarMesas(String gerenteUid) async {
+    final doc = await  FirebaseFirestore.instance
+        .collection('Usuarios').doc(gerenteUid).get();
+    final userData = doc.data() as Map<String, dynamic>?;
+    final Uid = userData?['gerenteUid'] as String?;
     return await _firestore
-        .collection('Gerentes')
-        .doc(gerenteId)
         .collection('Mesas')
         .orderBy('numero')
+        .where('gerenteUid', isEqualTo: Uid)
         .get();
   }
 
   /// Stream de mesas (tempo real)
-  Stream<QuerySnapshot> streamMesas(String gerenteId) {
+  Future<Stream<QuerySnapshot<Object?>>> streamMesas(String gerenteUid) async {
+    final doc = await FirebaseFirestore.instance
+        .collection('Usuarios').doc(gerenteUid).get();
+    final userData = doc.data() as Map<String, dynamic>?;
+    final Uid = userData?['gerenteUid'] as String?;
+
     return _firestore
-        .collection('Gerentes')
-        .doc(gerenteId)
         .collection('Mesas')
         .orderBy('numero')
+        .where('gerenteUid', isEqualTo: Uid)
         .snapshots();
   }
 
   /// Deletar mesa
   Future<void> deletarMesa(String gerenteId, String mesaUid) async {
     await _firestore
-        .collection('Gerentes')
-        .doc(gerenteId)
         .collection('Mesas')
         .doc(mesaUid)
         .delete();
@@ -61,25 +85,13 @@ class MesaFirebase {
   /// Atualizar mesa
   Future<void> atualizarMesa(String gerenteId, Mesa mesa) async {
     await _firestore
-        .collection('Gerentes')
-        .doc(gerenteId)
         .collection('Mesas')
         .doc(mesa.uid)
         .update({
-      'nome': mesa.nome,
-      'numero': mesa.numero,
-      'atualizadoEm': FieldValue.serverTimestamp(),
-    });
-  }
-
-  /// Buscar mesa específica
-  Future<DocumentSnapshot> buscarMesaPorUid(String gerenteId, String mesaUid) async {
-    return await _firestore
-        .collection('Gerentes')
-        .doc(gerenteId)
-        .collection('Mesas')
-        .doc(mesaUid)
-        .get();
+          'nome': mesa.nome,
+          'numero': mesa.numero,
+          'atualizadoEm': FieldValue.serverTimestamp(),
+        });
   }
 
   /// Converter DocumentSnapshot em Mesa
@@ -100,10 +112,9 @@ class MesaFirebase {
   /// Verificar se já existe mesa com mesmo número
   Future<bool> verificarMesaExistente(String gerenteId, int numero) async {
     QuerySnapshot snapshot = await _firestore
-        .collection('Gerentes')
-        .doc(gerenteId)
         .collection('Mesas')
         .where('numero', isEqualTo: numero)
+        .where('gerenteUid', isEqualTo: gerenteId)
         .get();
     return snapshot.docs.isNotEmpty;
   }

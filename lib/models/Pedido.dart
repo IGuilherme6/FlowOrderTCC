@@ -26,11 +26,7 @@ class Pedido {
       'uid': uid,
       'horario': horario.toIso8601String(),
       'status': statusAtual,
-      'mesa': {
-        'uid': mesa.uid,
-        'numero': mesa.numero,
-        'nome': mesa.nome,
-      },
+      'mesa': {'uid': mesa.uid, 'numero': mesa.numero, 'nome': mesa.nome},
       'itens': itens.map((item) => item.toMap()).toList(),
       'total': calcularTotal(),
     };
@@ -45,7 +41,12 @@ class Pedido {
         ..numero = map['mesa']['numero']
         ..nome = map['mesa']['nome'],
       itens: (map['itens'] as List<dynamic>)
-          .map((item) => ItemCardapio.fromMap(item as Map<String, dynamic>, item['uid'] ?? ''))
+          .map(
+            (item) => ItemCardapio.fromMap(
+              item as Map<String, dynamic>,
+              item['uid'] ?? '',
+            ),
+          )
           .toList(),
       statusAtual: map['status'] ?? 'Aberto',
     );
