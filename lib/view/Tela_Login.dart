@@ -44,7 +44,10 @@ class _telalogin extends State<Tela_Login> {
         Navigator.pushReplacementNamed(context, '/home');
       }
     } catch (e) {
-      print('Erro ao verificar status de autenticação: $e');
+      SnackBar(
+        content: Text('Erro ao verificar status de autenticação: $e'),
+        backgroundColor: Colors.green,
+      );
     }
 
     setState(() {

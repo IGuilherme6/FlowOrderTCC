@@ -35,4 +35,5 @@ class Cardapio {
       categoria: data['categoria'] ?? 'Outros',
     );
   }
+
 }

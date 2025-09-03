@@ -23,4 +23,5 @@ class ItemCardapio {
       categoria: map['categoria'],
     );
   }
+
 }

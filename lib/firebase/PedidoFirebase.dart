@@ -42,7 +42,7 @@ class PedidoFirebase {
       return snapshot.docs
           .map(
             (doc) => Pedido.fromMap(doc.data() as Map<String, dynamic>, doc.id),
-          )
+      )
           .toList();
     } catch (e) {
       throw Exception('Erro ao buscar pedidos: $e');
@@ -50,8 +50,11 @@ class PedidoFirebase {
   }
 
   /// Ouve pedidos em tempo real
-  Stream<List<Pedido>> ouvirPedidosTempoReal() {
-    return _pedidosRef.snapshots().map((snapshot) {
+  Stream<List<Pedido>> ouvirPedidosTempoReal(String gerenteUid) {
+    return _pedidosRef
+        .where('gerenteUid', isEqualTo: gerenteUid) // Filtra no banco de dados
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs.map((doc) {
         return Pedido.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       }).toList();

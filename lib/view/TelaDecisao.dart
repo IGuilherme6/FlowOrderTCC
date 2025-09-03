@@ -12,21 +12,13 @@ class TelaDecisao extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Verifica conexão com Firebase
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor: Colors.black,
-            body: Center(child: CircularProgressIndicator(color: Colors.red)),
-          );
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasData) {
+          return TelaHome(); // usuário logado
+        } else {
+          return Tela_Login(); // usuário não logado
         }
-
-        // Se o usuário está logado, manda para home
-        if (snapshot.hasData) {
-          return TelaHome();
-        }
-
-        // Se não está logado, manda para TelaLogin
-        return Tela_Login();
       },
     );
   }

@@ -78,7 +78,7 @@ class UsuarioFirebase {
           'criadoEm': FieldValue.serverTimestamp(),
         });
       } else {
-        String userId = await criarUsuarioAuth(
+        String userId = await criarUsuarioAuthSecundario(
           usuario.email,
           usuario.senha,
         );
@@ -93,10 +93,11 @@ class UsuarioFirebase {
           'ativo': true,
           'criadoEm': FieldValue.serverTimestamp(),
         });
+        return 'Conta Criada com sucesso, acesse a tela de login';
       }
       return 'Conta Criada com sucesso';
     }catch (e){
-      throw Exception('Erro ao Cadastrar');
+      throw Exception(e);
     }
   }
 
