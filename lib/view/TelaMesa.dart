@@ -36,9 +36,8 @@ class _TelaMesaState extends State<TelaMesa> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      Mesa novaMesa = Mesa();
+      Mesa novaMesa = Mesa(numero: int.tryParse(numero) ?? 0);
       novaMesa.nome = nome;
-      novaMesa.numero = int.tryParse(numero) ?? 0;
 
       String mensagem = await _mesaController.cadastrarMesa(novaMesa);
       _nomeController.clear();
@@ -305,7 +304,7 @@ class _TelaMesaState extends State<TelaMesa> {
                                                     ),
                                                     tooltip: 'Excluir mesa',
                                                     onPressed: () =>
-                                                        _excluirMesa(mesa.uid),
+                                                        _excluirMesa(mesa.uid!),
                                                   ),
                                                 ),
                                               ],

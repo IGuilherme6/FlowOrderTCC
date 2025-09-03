@@ -31,7 +31,7 @@ class MesaController {
   }
 
   /// Buscar mesas do gerente logado (snapshot único)
-  Future<List<Mesa>> buscarMesasDoGerente() async {
+  Future<List<Mesa>> buscarMesas() async {
     String? userId = _mesaFirebase.pegarIdUsuarioLogado();
     if (userId == null) {
       throw Exception('Erro: Nenhum Gerente logado');
@@ -83,7 +83,7 @@ class MesaController {
       throw Exception('Erro: Nenhum Gerente logado');
     }
 
-    if (mesa.uid.isEmpty) {
+    if (mesa.uid!.isEmpty) {
       throw Exception('UID da mesa é necessário para atualizar');
     }
 

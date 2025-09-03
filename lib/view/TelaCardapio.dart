@@ -253,36 +253,58 @@ class _TelaCardapioState extends State<TelaCardapio> {
   }
 
   void _mostrarDialogExcluirItem(String cardapioId) {
-    showDialog(
+    showDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Confirmar exclusão'),
-          content: Text('Deseja realmente excluir este item?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancelar'),
+      builder: (context) => AlertDialog(
+        backgroundColor: Cores.backgroundBlack,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Cores.borderGray),
+        ),
+        title: Text(
+          'Confirmar Exclusão',
+          style: TextStyle(color: Cores.textWhite),
+        ),
+        content: Text(
+          'Tem certeza que deseja excluir este item do cardápio?',
+          style: TextStyle(color: Cores.textWhite),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: Cores.primaryRed),
             ),
-            ElevatedButton(
-              onPressed: () async {
-                try {
-                  await _controller.deletarCardapio(cardapioId);
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Item excluído com sucesso!')),
-                  );
-                } catch (e) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(e.toString())));
-                }
-              },
-              child: Text('Excluir'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context, true);
+
+              try {
+                await _controller.deletarCardapio(cardapioId);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Item excluído com sucesso!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erro ao excluir item: ${e.toString()}'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: Text(
+              'Excluir',
+              style: TextStyle(color: Cores.primaryRed),
             ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 

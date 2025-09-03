@@ -48,8 +48,11 @@ class _TelaCadastro extends State<Tela_Cadastro> {
       setState(() {
         _isLoading = false;
       });
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushReplacementNamed(context, '/');
     }
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
