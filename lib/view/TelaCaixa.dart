@@ -2,12 +2,31 @@ import 'package:floworder/controller/CardapioController.dart';
 import 'package:floworder/controller/MesaController.dart';
 import 'package:floworder/models/ItemCardapio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:floworder/controller/PedidoController.dart';
 import 'package:floworder/models/Pedido.dart';
 import 'package:floworder/models/Mesa.dart';
 import 'package:floworder/view/BarraLateral.dart';
 import '../auxiliar/Cores.dart';
 import '../models/Cardapio.dart';
+
+// Classe para representar um item customizado
+class ItemCustomizado {
+  final Cardapio cardapio;
+  final int quantidade;
+  final String? observacao; // Para adicionais
+  final double? precoCustomizado; // Para valor personalizado
+
+  ItemCustomizado({
+    required this.cardapio,
+    required this.quantidade,
+    this.observacao,
+    this.precoCustomizado,
+  });
+
+  double get precoUnitario => precoCustomizado ?? cardapio.preco;
+  double get subtotal => precoUnitario * quantidade;
+}
 
 class TelaCaixa extends StatefulWidget {
   @override
@@ -33,10 +52,8 @@ class _TelaCaixaState extends State<TelaCaixa> {
       });
     } catch (e) {
       print('Erro ao inicializar stream: $e');
-      // Tratar erro aqui
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -352,7 +369,7 @@ class _TelaCaixaState extends State<TelaCaixa> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (pedido.statusAtual == 'Aberto') // Só permite adicionar itens se o pedido estiver aberto
+              if (pedido.statusAtual == 'Aberto')
                 TextButton.icon(
                   onPressed: () => _showAdicionarItensDialog(pedido),
                   icon: Icon(Icons.add, size: 16, color: Cores.primaryRed),
@@ -443,7 +460,6 @@ class _TelaCaixaState extends State<TelaCaixa> {
                 iconColor: Cores.textGray,
                 collapsedIconColor: Cores.textGray,
                 children: [
-                  // Buscar descrição do cardápio original ou mostrar informações básicas
                   FutureBuilder<String>(
                     future: _buscarDescricaoItem(item),
                     builder: (context, snapshot) {
@@ -514,7 +530,6 @@ class _TelaCaixaState extends State<TelaCaixa> {
       final cardapioController = CardapioController();
       final cardapios = await cardapioController.buscarCardapios();
 
-      // Buscar o cardápio correspondente ao item
       final cardapioEncontrado = cardapios.firstWhere(
             (cardapio) => cardapio.nome == item.nome && cardapio.preco == item.preco,
         orElse: () => Cardapio(
@@ -580,6 +595,325 @@ class _TelaCaixaState extends State<TelaCaixa> {
   }
 }
 
+// Dialog para customizar item
+class CustomizarItemDialog extends StatefulWidget {
+  final Cardapio item;
+  final Function(ItemCustomizado) onConfirm;
+
+  CustomizarItemDialog({required this.item, required this.onConfirm});
+
+  @override
+  _CustomizarItemDialogState createState() => _CustomizarItemDialogState();
+}
+
+class _CustomizarItemDialogState extends State<CustomizarItemDialog> {
+  final TextEditingController _observacaoController = TextEditingController();
+  final TextEditingController _precoController = TextEditingController();
+  int _quantidade = 1;
+  bool _usarPrecoCustomizado = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _precoController.text = widget.item.preco.toStringAsFixed(2);
+  }
+
+  @override
+  void dispose() {
+    _observacaoController.dispose();
+    _precoController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Cores.cardBlack,
+      title: Text(
+        'Personalizar Item',
+        style: TextStyle(color: Cores.textWhite),
+      ),
+      content: Container(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Informações do item
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Cores.backgroundBlack,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Cores.borderGray),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.item.nome,
+                    style: TextStyle(
+                      color: Cores.textWhite,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    widget.item.categoria,
+                    style: TextStyle(color: Cores.textGray, fontSize: 12),
+                  ),
+                  if (widget.item.descricao.isNotEmpty) ...[
+                    SizedBox(height: 4),
+                    Text(
+                      widget.item.descricao,
+                      style: TextStyle(color: Cores.textGray, fontSize: 11),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            SizedBox(height: 16),
+
+            // Quantidade
+            Text(
+              'Quantidade:',
+              style: TextStyle(color: Cores.textWhite, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: _quantidade > 1 ? () {
+                    setState(() => _quantidade--);
+                  } : null,
+                  icon: Icon(Icons.remove, color: Cores.textWhite, size: 20),
+                  style: IconButton.styleFrom(
+                    backgroundColor: _quantidade > 1 ? Cores.darkRed : Cores.textGray,
+                    minimumSize: Size(40, 40),
+                  ),
+                ),
+                Container(
+                  width: 50,
+                  height: 40,
+                  alignment: Alignment.center,
+                  margin: EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Cores.backgroundBlack,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Cores.borderGray),
+                  ),
+                  child: Text(
+                    _quantidade.toString(),
+                    style: TextStyle(
+                      color: Cores.textWhite,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    setState(() => _quantidade++);
+                  },
+                  icon: Icon(Icons.add, color: Cores.textWhite, size: 20),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Cores.primaryRed,
+                    minimumSize: Size(40, 40),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+
+            // Observações/Adicionais
+            Text(
+              'Observações/Adicionais:',
+              style: TextStyle(color: Cores.textWhite, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            TextField(
+              controller: _observacaoController,
+              maxLines: 3,
+              style: TextStyle(color: Cores.textWhite),
+              decoration: InputDecoration(
+                hintText: 'Ex: sem cebola, batata extra, ponto da carne...',
+                hintStyle: TextStyle(color: Cores.textGray),
+                filled: true,
+                fillColor: Cores.backgroundBlack,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Cores.borderGray),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Cores.borderGray),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Cores.primaryRed),
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+
+            // Preço Personalizado
+            Row(
+              children: [
+                Checkbox(
+                  value: _usarPrecoCustomizado,
+                  onChanged: (value) {
+                    setState(() {
+                      _usarPrecoCustomizado = value!;
+                      if (!value) {
+                        _precoController.text = widget.item.preco.toStringAsFixed(2);
+                      }
+                    });
+                  },
+                  activeColor: Cores.primaryRed,
+                ),
+                Text(
+                  'Usar preço personalizado',
+                  style: TextStyle(color: Cores.textWhite),
+                ),
+              ],
+            ),
+            if (_usarPrecoCustomizado) ...[
+              SizedBox(height: 8),
+              TextField(
+                controller: _precoController,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                ],
+                style: TextStyle(color: Cores.textWhite),
+                decoration: InputDecoration(
+                  labelText: 'Preço unitário (R\$)',
+                  labelStyle: TextStyle(color: Cores.textGray),
+                  prefixText: 'R\$ ',
+                  prefixStyle: TextStyle(color: Cores.textWhite),
+                  filled: true,
+                  fillColor: Cores.backgroundBlack,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Cores.borderGray),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Cores.borderGray),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Cores.primaryRed),
+                  ),
+                ),
+              ),
+            ],
+            SizedBox(height: 16),
+
+            // Resumo
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Cores.backgroundBlack,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Cores.primaryRed),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Preço unitário:',
+                        style: TextStyle(color: Cores.textGray),
+                      ),
+                      Text(
+                        'R\$ ${_getPrecoUnitario().toStringAsFixed(2)}',
+                        style: TextStyle(color: Cores.textWhite),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Quantidade:',
+                        style: TextStyle(color: Cores.textGray),
+                      ),
+                      Text(
+                        _quantidade.toString(),
+                        style: TextStyle(color: Cores.textWhite),
+                      ),
+                    ],
+                  ),
+                  Divider(color: Cores.borderGray),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Subtotal:',
+                        style: TextStyle(
+                          color: Cores.textWhite,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        'R\$ ${(_getPrecoUnitario() * _quantidade).toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: Cores.primaryRed,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancelar', style: TextStyle(color: Cores.textGray)),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final itemCustomizado = ItemCustomizado(
+              cardapio: widget.item,
+              quantidade: _quantidade,
+              observacao: _observacaoController.text.trim().isEmpty
+                  ? null
+                  : _observacaoController.text.trim(),
+              precoCustomizado: _usarPrecoCustomizado
+                  ? _getPrecoUnitario()
+                  : null,
+            );
+
+            widget.onConfirm(itemCustomizado);
+            Navigator.pop(context);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Cores.primaryRed,
+          ),
+          child: Text('Confirmar', style: TextStyle(color: Cores.textWhite)),
+        ),
+      ],
+    );
+  }
+
+  double _getPrecoUnitario() {
+    if (!_usarPrecoCustomizado) return widget.item.preco;
+    try {
+      return double.parse(_precoController.text);
+    } catch (e) {
+      return widget.item.preco;
+    }
+  }
+}
+
 // ============================
 // Dialog para adicionar novo pedido
 // ============================
@@ -595,9 +929,9 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
   final TextEditingController _observacaoController = TextEditingController();
 
   Mesa? mesaSelecionada;
-  List<Cardapio> _itensCardapio = []; // Mudou de ItemCardapio para Cardapio
+  List<Cardapio> _itensCardapio = [];
   List<Mesa> _mesas = [];
-  Map<Cardapio, int> _itensSelecionados = {}; // Mudou de ItemCardapio para Cardapio
+  List<ItemCustomizado> _itensCustomizados = []; // Mudança aqui
   bool _carregando = true;
 
   @override
@@ -619,7 +953,7 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
 
       setState(() {
         _mesas = mesas;
-        _itensCardapio = cardapios.where((item) => item.ativo).toList(); // Só itens ativos
+        _itensCardapio = cardapios.where((item) => item.ativo).toList();
         _carregando = false;
       });
     } catch (e) {
@@ -639,41 +973,68 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
     });
   }
 
-  void _alterarQuantidadeItem(Cardapio item, int quantidade) {
+  void _adicionarItemCustomizado(ItemCustomizado itemCustomizado) {
     setState(() {
-      if (quantidade <= 0) {
-        _itensSelecionados.remove(item);
+      // Verifica se já existe um item igual (mesmo cardápio, mesma observação e mesmo preço)
+      final itemExistente = _itensCustomizados.firstWhere(
+            (item) =>
+        item.cardapio.uid == itemCustomizado.cardapio.uid &&
+            item.observacao == itemCustomizado.observacao &&
+            item.precoUnitario == itemCustomizado.precoUnitario,
+        orElse: () => ItemCustomizado(cardapio: itemCustomizado.cardapio, quantidade: 0),
+      );
+
+      if (itemExistente.quantidade > 0) {
+        // Atualiza a quantidade do item existente
+        final index = _itensCustomizados.indexWhere(
+              (item) =>
+          item.cardapio.uid == itemCustomizado.cardapio.uid &&
+              item.observacao == itemCustomizado.observacao &&
+              item.precoUnitario == itemCustomizado.precoUnitario,
+        );
+        _itensCustomizados[index] = ItemCustomizado(
+          cardapio: itemCustomizado.cardapio,
+          quantidade: itemExistente.quantidade + itemCustomizado.quantidade,
+          observacao: itemCustomizado.observacao,
+          precoCustomizado: itemCustomizado.precoCustomizado,
+        );
       } else {
-        _itensSelecionados[item] = quantidade;
+        // Adiciona novo item
+        _itensCustomizados.add(itemCustomizado);
       }
+    });
+  }
+
+  void _removerItemCustomizado(int index) {
+    setState(() {
+      _itensCustomizados.removeAt(index);
     });
   }
 
   double get _totalPedido {
-    return _itensSelecionados.entries.fold<double>(
-        0,
-            (sum, entry) => sum + (entry.key.preco * entry.value)
+    return _itensCustomizados.fold<double>(
+        0, (sum, item) => sum + item.subtotal
     );
   }
 
-  // Converte Cardapio para ItemCardapio para compatibilidade com Pedido
   List<ItemCardapio> get _itensParaPedido {
     List<ItemCardapio> itens = [];
-    _itensSelecionados.forEach((cardapio, quantidade) {
-      for (int i = 0; i < quantidade; i++) {
+    for (var itemCustomizado in _itensCustomizados) {
+      for (int i = 0; i < itemCustomizado.quantidade; i++) {
         itens.add(ItemCardapio(
-          uid: cardapio.uid,
-          nome: cardapio.nome,
-          preco: cardapio.preco,
-          categoria: cardapio.categoria,
+          uid: itemCustomizado.cardapio.uid,
+          nome: itemCustomizado.cardapio.nome +
+              (itemCustomizado.observacao != null ? ' (${itemCustomizado.observacao})' : ''),
+          preco: itemCustomizado.precoUnitario,
+          categoria: itemCustomizado.cardapio.categoria,
         ));
       }
-    });
+    }
     return itens;
   }
 
   Future<void> _salvarPedido() async {
-    if (mesaSelecionada == null || _itensSelecionados.isEmpty) {
+    if (mesaSelecionada == null || _itensCustomizados.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Selecione uma mesa e pelo menos um item"),
@@ -684,10 +1045,8 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
     }
 
     try {
-      // Criar a lista de itens do cardápio selecionados
       List<ItemCardapio> itensPedido = _itensParaPedido;
 
-      // Criar o pedido com os itens do cardápio
       final pedido = Pedido(
         horario: DateTime.now(),
         mesa: mesaSelecionada!,
@@ -696,7 +1055,6 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
         observacao: _observacaoController.text.trim(),
       );
 
-      // Salvar o pedido - corrigido para usar apenas o pedido
       await _pedidoController.cadastrarPedido(pedido);
 
       Navigator.pop(context);
@@ -725,7 +1083,7 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
         style: TextStyle(color: Cores.textWhite),
       ),
       content: Container(
-        width: 600,
+        width: 700,
         height: 700,
         child: _carregando
             ? Center(
@@ -778,14 +1136,23 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
 
                     SizedBox(height: 24),
 
-                    // Seleção de Itens
-                    Text(
-                      "Itens do Cardápio:",
-                      style: TextStyle(
-                        color: Cores.textWhite,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    // Lista de Itens do Cardápio
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Itens do Cardápio:",
+                          style: TextStyle(
+                            color: Cores.textWhite,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          "Clique para personalizar",
+                          style: TextStyle(color: Cores.textGray, fontSize: 12),
+                        ),
+                      ],
                     ),
                     SizedBox(height: 8),
                     if (_itensCardapio.isEmpty)
@@ -794,133 +1161,138 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
                         style: TextStyle(color: Cores.textGray),
                       )
                     else
-                      ..._itensCardapio.map((item) {
-                        final quantidade = _itensSelecionados[item] ?? 0;
-                        return Container(
-                          margin: EdgeInsets.only(bottom: 8),
-                          padding: EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: quantidade > 0
-                                ? Cores.primaryRed.withOpacity(0.1)
-                                : Cores.backgroundBlack,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: quantidade > 0
-                                  ? Cores.primaryRed
-                                  : Cores.borderGray,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          item.nome,
-                                          style: TextStyle(
-                                            color: Cores.textWhite,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          "R\$ ${item.preco.toStringAsFixed(2)} - ${item.categoria}",
-                                          style: TextStyle(color: Cores.textGray),
-                                        ),
-                                      ],
+                      Container(
+                        height: 200,
+                        child: ListView.builder(
+                          itemCount: _itensCardapio.length,
+                          itemBuilder: (context, index) {
+                            final item = _itensCardapio[index];
+                            return Card(
+                              color: Cores.backgroundBlack,
+                              margin: EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                title: Text(
+                                  item.nome,
+                                  style: TextStyle(color: Cores.textWhite, fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "R\$ ${item.preco.toStringAsFixed(2)} - ${item.categoria}",
+                                      style: TextStyle(color: Cores.textGray),
                                     ),
-                                  ),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        onPressed: quantidade > 0
-                                            ? () => _alterarQuantidadeItem(item, quantidade - 1)
-                                            : null,
-                                        icon: Icon(Icons.remove, color: Cores.textWhite, size: 16),
-                                        style: IconButton.styleFrom(
-                                          backgroundColor: quantidade > 0 ? Cores.darkRed : Cores.textGray,
-                                          minimumSize: Size(35, 35),
-                                        ),
+                                    if (item.descricao.isNotEmpty)
+                                      Text(
+                                        item.descricao,
+                                        style: TextStyle(color: Cores.textGray, fontSize: 11),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      Container(
-                                        width: 45,
-                                        height: 35,
-                                        alignment: Alignment.center,
-                                        margin: EdgeInsets.symmetric(horizontal: 8),
-                                        decoration: BoxDecoration(
-                                          color: Cores.cardBlack,
-                                          borderRadius: BorderRadius.circular(4),
-                                          border: Border.all(color: Cores.borderGray),
-                                        ),
-                                        child: Text(
-                                          quantidade.toString(),
-                                          style: TextStyle(
-                                            color: Cores.textWhite,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
+                                  ],
+                                ),
+                                trailing: ElevatedButton.icon(
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => CustomizarItemDialog(
+                                        item: item,
+                                        onConfirm: _adicionarItemCustomizado,
                                       ),
-                                      IconButton(
-                                        onPressed: () => _alterarQuantidadeItem(item, quantidade + 1),
-                                        icon: Icon(Icons.add, color: Cores.textWhite, size: 16),
-                                        style: IconButton.styleFrom(
-                                          backgroundColor: Cores.primaryRed,
-                                          minimumSize: Size(35, 35),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              // Descrição expandível
-                              if (item.descricao.isNotEmpty) ...[
-                                SizedBox(height: 8),
-                                InkWell(
-                                  //onTap: () => _mostrarDescricaoCompleta(item),
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Cores.cardBlack,
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: Cores.borderGray.withOpacity(0.3)),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            item.descricao,
-                                            style: TextStyle(
-                                              color: Cores.textGray,
-                                              fontSize: 11,
-                                            ),
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        Icon(
-                                          Icons.info_outline,
-                                          color: Cores.textGray,
-                                          size: 16,
-                                        ),
-                                      ],
-                                    ),
+                                    );
+                                  },
+                                  icon: Icon(Icons.add, size: 16),
+                                  label: Text('Adicionar', style: TextStyle(fontSize: 12)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Cores.primaryRed,
+                                    foregroundColor: Cores.textWhite,
+                                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                   ),
                                 ),
-                              ],
-                            ],
-                          ),
-                        );
-                      }).toList(),
+                                onTap: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => CustomizarItemDialog(
+                                      item: item,
+                                      onConfirm: _adicionarItemCustomizado,
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ),
 
                     SizedBox(height: 24),
 
+                    // Itens Selecionados
+                    if (_itensCustomizados.isNotEmpty) ...[
+                      Text(
+                        "Itens Selecionados:",
+                        style: TextStyle(
+                          color: Cores.textWhite,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Container(
+                        height: 150,
+                        child: ListView.builder(
+                          itemCount: _itensCustomizados.length,
+                          itemBuilder: (context, index) {
+                            final itemCustomizado = _itensCustomizados[index];
+                            return Card(
+                              color: Cores.primaryRed.withOpacity(0.1),
+                              margin: EdgeInsets.only(bottom: 8),
+                              child: ListTile(
+                                title: Text(
+                                  "${itemCustomizado.quantidade}x ${itemCustomizado.cardapio.nome}",
+                                  style: TextStyle(color: Cores.textWhite, fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (itemCustomizado.observacao != null)
+                                      Text(
+                                        "Obs: ${itemCustomizado.observacao}",
+                                        style: TextStyle(color: Cores.textGray, fontSize: 11),
+                                      ),
+                                    Text(
+                                      "R\$ ${itemCustomizado.precoUnitario.toStringAsFixed(2)} cada",
+                                      style: TextStyle(color: Cores.textGray, fontSize: 11),
+                                    ),
+                                  ],
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "R\$ ${itemCustomizado.subtotal.toStringAsFixed(2)}",
+                                      style: TextStyle(
+                                        color: Cores.primaryRed,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    IconButton(
+                                      onPressed: () => _removerItemCustomizado(index),
+                                      icon: Icon(Icons.delete, color: Colors.red, size: 20),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                    ],
+
                     // Campo de Observação
                     Text(
-                      "Observações:",
+                      "Observações do Pedido:",
                       style: TextStyle(
                         color: Cores.textWhite,
                         fontSize: 16,
@@ -933,7 +1305,7 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
                       maxLines: 3,
                       style: TextStyle(color: Cores.textWhite),
                       decoration: InputDecoration(
-                        hintText: "Observações do pedido (opcional)...",
+                        hintText: "Observações gerais do pedido (opcional)...",
                         hintStyle: TextStyle(color: Cores.textGray),
                         filled: true,
                         fillColor: Cores.backgroundBlack,
@@ -956,54 +1328,40 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
               ),
             ),
 
-            // Resumo e Total
-            if (_itensSelecionados.isNotEmpty) ...[
+            // Resumo Final e Total
+            if (_itensCustomizados.isNotEmpty) ...[
               Divider(color: Cores.borderGray),
               Container(
-                padding: EdgeInsets.all(12),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Cores.backgroundBlack,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Cores.borderGray),
+                  border: Border.all(color: Cores.primaryRed, width: 2),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      "Resumo do Pedido:",
-                      style: TextStyle(
-                        color: Cores.textWhite,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    ..._itensSelecionados.entries.map((entry) => Padding(
-                      padding: EdgeInsets.only(bottom: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              "${entry.value}x ${entry.key.nome}",
-                              style: TextStyle(color: Cores.textGray),
-                            ),
-                          ),
-                          Text(
-                            "R\$ ${(entry.key.preco * entry.value).toStringAsFixed(2)}",
-                            style: TextStyle(color: Cores.textWhite),
-                          ),
-                        ],
-                      ),
-                    )),
-                    Divider(color: Cores.borderGray),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Total:",
+                          "Total de itens: ${_itensCustomizados.fold<int>(0, (sum, item) => sum + item.quantidade)}",
+                          style: TextStyle(color: Cores.textGray, fontSize: 14),
+                        ),
+                        Text(
+                          "Variações: ${_itensCustomizados.length}",
+                          style: TextStyle(color: Cores.textGray, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          "TOTAL",
                           style: TextStyle(
-                            color: Cores.textWhite,
-                            fontSize: 18,
+                            color: Cores.textGray,
+                            fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1011,7 +1369,7 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
                           "R\$ ${_totalPedido.toStringAsFixed(2)}",
                           style: TextStyle(
                             color: Cores.primaryRed,
-                            fontSize: 18,
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1030,22 +1388,23 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
           child: Text('Cancelar', style: TextStyle(color: Cores.textGray)),
         ),
         ElevatedButton(
-          onPressed: (_carregando || mesaSelecionada == null || _itensSelecionados.isEmpty)
+          onPressed: (_carregando || mesaSelecionada == null || _itensCustomizados.isEmpty)
               ? null
               : _salvarPedido,
           style: ElevatedButton.styleFrom(
             backgroundColor: Cores.primaryRed,
             disabledBackgroundColor: Cores.textGray,
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
-          child: Text('Salvar Pedido', style: TextStyle(color: Cores.textWhite)),
+          child: Text(
+            'Criar Pedido',
+            style: TextStyle(color: Cores.textWhite, fontWeight: FontWeight.bold),
+          ),
         ),
       ],
     );
   }
-
-
 }
-
 
 // ============================
 // Dialog para adicionar itens a pedido existente
@@ -1064,7 +1423,7 @@ class _AdicionarItensDialogState extends State<AdicionarItensDialog> {
   final CardapioController _cardapioController = CardapioController();
 
   List<Cardapio> _itensCardapio = [];
-  Map<Cardapio, int> _itensSelecionados = {};
+  List<ItemCustomizado> _novosItensCustomizados = [];
   bool _carregando = true;
 
   @override
@@ -1092,19 +1451,45 @@ class _AdicionarItensDialogState extends State<AdicionarItensDialog> {
     }
   }
 
-  void _alterarQuantidadeItem(Cardapio item, int quantidade) {
+  void _adicionarItemCustomizado(ItemCustomizado itemCustomizado) {
     setState(() {
-      if (quantidade <= 0) {
-        _itensSelecionados.remove(item);
+      final itemExistente = _novosItensCustomizados.firstWhere(
+            (item) =>
+        item.cardapio.uid == itemCustomizado.cardapio.uid &&
+            item.observacao == itemCustomizado.observacao &&
+            item.precoUnitario == itemCustomizado.precoUnitario,
+        orElse: () => ItemCustomizado(cardapio: itemCustomizado.cardapio, quantidade: 0),
+      );
+
+      if (itemExistente.quantidade > 0) {
+        final index = _novosItensCustomizados.indexWhere(
+              (item) =>
+          item.cardapio.uid == itemCustomizado.cardapio.uid &&
+              item.observacao == itemCustomizado.observacao &&
+              item.precoUnitario == itemCustomizado.precoUnitario,
+        );
+        _novosItensCustomizados[index] = ItemCustomizado(
+          cardapio: itemCustomizado.cardapio,
+          quantidade: itemExistente.quantidade + itemCustomizado.quantidade,
+          observacao: itemCustomizado.observacao,
+          precoCustomizado: itemCustomizado.precoCustomizado,
+        );
       } else {
-        _itensSelecionados[item] = quantidade;
+        _novosItensCustomizados.add(itemCustomizado);
       }
     });
   }
 
+  void _removerItemCustomizado(int index) {
+    setState(() {
+      _novosItensCustomizados.removeAt(index);
+    });
+  }
+
   double get _totalNovosItens {
-    return _itensSelecionados.entries.fold<double>(
-        0, (sum, entry) => sum + (entry.key.preco * entry.value));
+    return _novosItensCustomizados.fold<double>(
+        0, (sum, item) => sum + item.subtotal
+    );
   }
 
   double get _totalPedidoAtualizado {
@@ -1113,21 +1498,22 @@ class _AdicionarItensDialogState extends State<AdicionarItensDialog> {
 
   List<ItemCardapio> get _novosItensParaPedido {
     List<ItemCardapio> itens = [];
-    _itensSelecionados.forEach((cardapio, quantidade) {
-      for (int i = 0; i < quantidade; i++) {
+    for (var itemCustomizado in _novosItensCustomizados) {
+      for (int i = 0; i < itemCustomizado.quantidade; i++) {
         itens.add(ItemCardapio(
-          uid: cardapio.uid,
-          nome: cardapio.nome,
-          preco: cardapio.preco,
-          categoria: cardapio.categoria,
+          uid: itemCustomizado.cardapio.uid,
+          nome: itemCustomizado.cardapio.nome +
+              (itemCustomizado.observacao != null ? ' (${itemCustomizado.observacao})' : ''),
+          preco: itemCustomizado.precoUnitario,
+          categoria: itemCustomizado.cardapio.categoria,
         ));
       }
-    });
+    }
     return itens;
   }
 
   Future<void> _adicionarItensAoPedido() async {
-    if (_itensSelecionados.isEmpty) {
+    if (_novosItensCustomizados.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Selecione pelo menos um item para adicionar"),
@@ -1141,7 +1527,6 @@ class _AdicionarItensDialogState extends State<AdicionarItensDialog> {
       List<ItemCardapio> novosItens = _novosItensParaPedido;
       List<ItemCardapio> itensAtualizados = [...widget.pedido.itens, ...novosItens];
 
-      // Atualizar o pedido no Firebase
       await _pedidoController.atualizarItensPedido(widget.pedido.uid!, itensAtualizados);
 
       Navigator.pop(context);
@@ -1187,7 +1572,7 @@ class _AdicionarItensDialogState extends State<AdicionarItensDialog> {
         ],
       ),
       content: Container(
-        width: 500,
+        width: 600,
         height: 600,
         child: _carregando
             ? Center(
@@ -1196,220 +1581,250 @@ class _AdicionarItensDialogState extends State<AdicionarItensDialog> {
           ),
         )
             : Column(
+            children: [
+        // Resumo do pedido atual
+        Container(
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Cores.backgroundBlack,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Cores.borderGray),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Resumo do pedido atual
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Cores.backgroundBlack,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Cores.borderGray),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Total atual do pedido:',
-                    style: TextStyle(color: Cores.textGray, fontSize: 14),
-                  ),
-                  Text(
-                    'R\$ ${widget.pedido.calcularTotal().toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: Cores.textWhite,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+            Text(
+              'Total atual do pedido:',
+              style: TextStyle(color: Cores.textGray, fontSize: 14),
+            ),
+            Text(
+              'R\$ ${widget.pedido.calcularTotal().toStringAsFixed(2)}',
+              style: TextStyle(
+                color: Cores.textWhite,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 16),
+          ],
+        ),
+      ),
+      SizedBox(height: 16),
 
-            // Lista de itens disponíveis
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Selecione os itens para adicionar:",
-                      style: TextStyle(
-                        color: Cores.textWhite,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    if (_itensCardapio.isEmpty)
-                      Text(
-                        "Nenhum item encontrado",
-                        style: TextStyle(color: Cores.textGray),
-                      )
-                    else
-                      ..._itensCardapio.map((item) {
-                        final quantidade = _itensSelecionados[item] ?? 0;
-                        return Container(
-                          margin: EdgeInsets.only(bottom: 8),
-                          padding: EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: quantidade > 0
-                                ? Cores.primaryRed.withOpacity(0.1)
-                                : Cores.backgroundBlack,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: quantidade > 0
-                                  ? Cores.primaryRed
-                                  : Cores.borderGray,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.nome,
-                                      style: TextStyle(
-                                        color: Cores.textWhite,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      "R\$ ${item.preco.toStringAsFixed(2)} - ${item.categoria}",
-                                      style: TextStyle(color: Cores.textGray),
-                                    ),
-                                    if (item.descricao.isNotEmpty)
-                                      Text(
-                                        item.descricao,
-                                        style: TextStyle(
-                                          color: Cores.textGray.withOpacity(0.7),
-                                          fontSize: 11,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    onPressed: quantidade > 0
-                                        ? () => _alterarQuantidadeItem(item, quantidade - 1)
-                                        : null,
-                                    icon: Icon(Icons.remove, color: Cores.textWhite, size: 16),
-                                    style: IconButton.styleFrom(
-                                      backgroundColor: quantidade > 0 ? Cores.darkRed : Cores.textGray,
-                                      minimumSize: Size(32, 32),
-                                    ),
-                                  ),
-                                  Container(
-                                    width: 40,
-                                    height: 32,
-                                    alignment: Alignment.center,
-                                    margin: EdgeInsets.symmetric(horizontal: 8),
-                                    decoration: BoxDecoration(
-                                      color: Cores.cardBlack,
-                                      borderRadius: BorderRadius.circular(4),
-                                      border: Border.all(color: Cores.borderGray),
-                                    ),
-                                    child: Text(
-                                      quantidade.toString(),
-                                      style: TextStyle(
-                                        color: Cores.textWhite,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: () => _alterarQuantidadeItem(item, quantidade + 1),
-                                    icon: Icon(Icons.add, color: Cores.textWhite, size: 16),
-                                    style: IconButton.styleFrom(
-                                      backgroundColor: Cores.primaryRed,
-                                      minimumSize: Size(32, 32),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                  ],
+      // Lista de itens disponíveis
+      Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+            Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Itens do Cardápio:",
+                style: TextStyle(
+                  color: Cores.textWhite,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
+              Text(
+                "Clique para personalizar",
+                style: TextStyle(color: Cores.textGray, fontSize: 12),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
 
-            // Resumo dos itens selecionados
-            if (_itensSelecionados.isNotEmpty) ...[
-              SizedBox(height: 16),
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Cores.backgroundBlack,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Cores.primaryRed),
+          if (_itensCardapio.isEmpty)
+      Text(
+      "Nenhum item encontrado",
+      style: TextStyle(color: Cores.textGray),
+    )
+    else
+    Expanded(
+    flex: 3,
+    child: ListView.builder(
+    itemCount: _itensCardapio.length,
+    itemBuilder: (context, index) {
+    final item = _itensCardapio[index];
+    return Card(
+    color: Cores.backgroundBlack,
+    margin: EdgeInsets.only(bottom: 8),
+    child: ListTile(
+    title: Text(
+    item.nome,
+    style: TextStyle(color: Cores.textWhite, fontWeight: FontWeight.bold),
+    ),
+    subtitle: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+    Text(
+    "R\$ ${item.preco.toStringAsFixed(2)} - ${item.categoria}",
+    style: TextStyle(color: Cores.textGray),
+    ),
+    if (item.descricao.isNotEmpty)
+    Text(
+    item.descricao,
+    style: TextStyle(color: Cores.textGray, fontSize: 11),
+    maxLines: 2,
+    overflow: TextOverflow.ellipsis,
+    ),
+    ],
+    ),
+    trailing: ElevatedButton.icon(
+    onPressed: () {
+    showDialog(
+    context: context,
+    builder: (context) => CustomizarItemDialog(
+    item: item,
+    onConfirm: _adicionarItemCustomizado,
+    ),
+    );
+    },
+    icon: Icon(Icons.add, size: 16),
+    label: Text('Adicionar', style: TextStyle(fontSize: 12)),
+    style: ElevatedButton.styleFrom(
+    backgroundColor: Cores.primaryRed,
+    foregroundColor: Cores.textWhite,
+    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    ),
+    ),
+    onTap: () {
+    showDialog(
+    context: context,
+    builder: (context) => CustomizarItemDialog(
+    item: item,
+    onConfirm: _adicionarItemCustomizado,
+    ),
+    );
+    },
+    ),
+    );
+    },
+    ),
+    ),
+
+    // Novos itens selecionados
+    if (_novosItensCustomizados.isNotEmpty) ...[
+    SizedBox(height: 16),
+    Text(
+    "Novos itens selecionados:",
+    style: TextStyle(
+    color: Cores.textWhite,
+    fontWeight: FontWeight.bold,
+    fontSize: 14,
+    ),
+    ),
+    SizedBox(height: 8),
+    Expanded(
+    flex: 2,
+    child: ListView.builder(itemCount: _novosItensCustomizados.length,
+      itemBuilder: (context, index) {
+        final itemCustomizado = _novosItensCustomizados[index];
+        return Card(
+          color: Cores.primaryRed.withOpacity(0.1),
+          margin: EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            title: Text(
+              "${itemCustomizado.quantidade}x ${itemCustomizado.cardapio.nome}",
+              style: TextStyle(color: Cores.textWhite, fontWeight: FontWeight.bold),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (itemCustomizado.observacao != null)
+                  Text(
+                    "Obs: ${itemCustomizado.observacao}",
+                    style: TextStyle(color: Cores.textGray, fontSize: 11),
+                  ),
+                Text(
+                  "R\$ ${itemCustomizado.precoUnitario.toStringAsFixed(2)} cada",
+                  style: TextStyle(color: Cores.textGray, fontSize: 11),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Novos itens selecionados:",
-                      style: TextStyle(
-                        color: Cores.textWhite,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    ..._itensSelecionados.entries.map((entry) => Padding(
-                      padding: EdgeInsets.only(bottom: 4),
-                      child: Row(
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "R\$ ${itemCustomizado.subtotal.toStringAsFixed(2)}",
+                  style: TextStyle(
+                    color: Cores.primaryRed,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(width: 8),
+                IconButton(
+                  onPressed: () => _removerItemCustomizado(index),
+                  icon: Icon(Icons.delete, color: Colors.red, size: 20),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+    ),
+    ],
+            ],
+          ),
+      ),
+
+              // Resumo dos novos itens
+              if (_novosItensCustomizados.isNotEmpty) ...[
+                SizedBox(height: 16),
+                Container(
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Cores.backgroundBlack,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Cores.primaryRed, width: 2),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Expanded(
-                            child: Text(
-                              "${entry.value}x ${entry.key.nome}",
-                              style: TextStyle(color: Cores.textGray, fontSize: 12),
-                            ),
+                          Text(
+                            "Novos itens:",
+                            style: TextStyle(color: Cores.textGray, fontSize: 14),
                           ),
                           Text(
-                            "R\$ ${(entry.key.preco * entry.value).toStringAsFixed(2)}",
-                            style: TextStyle(color: Cores.textWhite, fontSize: 12),
+                            "R\$ ${_totalNovosItens.toStringAsFixed(2)}",
+                            style: TextStyle(
+                              color: Cores.primaryRed,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),
-                    )),
-                    Divider(color: Cores.borderGray),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Novo total:",
-                          style: TextStyle(
-                            color: Cores.textWhite,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                      Divider(color: Cores.borderGray),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Total atualizado:",
+                            style: TextStyle(
+                              color: Cores.textWhite,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        Text(
-                          "R\$ ${_totalPedidoAtualizado.toStringAsFixed(2)}",
-                          style: TextStyle(
-                            color: Cores.primaryRed,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                          Text(
+                            "R\$ ${_totalPedidoAtualizado.toStringAsFixed(2)}",
+                            style: TextStyle(
+                              color: Cores.primaryRed,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
-          ],
         ),
       ),
       actions: [
@@ -1418,14 +1833,18 @@ class _AdicionarItensDialogState extends State<AdicionarItensDialog> {
           child: Text('Cancelar', style: TextStyle(color: Cores.textGray)),
         ),
         ElevatedButton(
-          onPressed: (_carregando || _itensSelecionados.isEmpty)
+          onPressed: (_carregando || _novosItensCustomizados.isEmpty)
               ? null
               : _adicionarItensAoPedido,
           style: ElevatedButton.styleFrom(
             backgroundColor: Cores.primaryRed,
             disabledBackgroundColor: Cores.textGray,
+            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
-          child: Text('Adicionar Itens', style: TextStyle(color: Cores.textWhite)),
+          child: Text(
+            'Adicionar ao Pedido',
+            style: TextStyle(color: Cores.textWhite, fontWeight: FontWeight.bold),
+          ),
         ),
       ],
     );
