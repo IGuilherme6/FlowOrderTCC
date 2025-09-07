@@ -272,10 +272,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Cancelar',
-              style: TextStyle(color: Cores.primaryRed),
-            ),
+            child: Text('Cancelar', style: TextStyle(color: Cores.primaryRed)),
           ),
           TextButton(
             onPressed: () async {
@@ -298,10 +295,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
                 );
               }
             },
-            child: Text(
-              'Excluir',
-              style: TextStyle(color: Cores.primaryRed),
-            ),
+            child: Text('Excluir', style: TextStyle(color: Cores.primaryRed)),
           ),
         ],
       ),
@@ -325,260 +319,288 @@ class _TelaCardapioState extends State<TelaCardapio> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-      backgroundColor: Cores.backgroundBlack,
-      body: Row(
-        children: [
-          Barralateral(currentRoute: '/cardapio'),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Gerenciamento de Cardápio',
-                    style: TextStyle(
-                      color: Cores.textWhite,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
+    backgroundColor: Cores.backgroundBlack,
+    body: Row(
+      children: [
+        Barralateral(currentRoute: '/cardapio'),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Gerenciamento de Cardápio',
+                  style: TextStyle(
+                    color: Cores.textWhite,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
                   ),
-                  SizedBox(height: 24),
+                ),
+                SizedBox(height: 24),
 
-                  // Filtros
-                  Row(
-                    children: [
-                      // Busca por texto
-                      Expanded(
-                        child: TextField(
-                          onChanged: _filtrarCardapios,
-                          style: TextStyle(color: Cores.textWhite),
-                          decoration: InputDecoration(
-                            hintText: 'Buscar item...',
-                            hintStyle: TextStyle(color: Cores.textGray),
-                            prefixIcon: Icon(
-                              Icons.search,
-                              color: Cores.textGray,
-                            ),
-                            filled: true,
-                            fillColor: Cores.cardBlack,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Cores.borderGray),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 16),
-
-                      // Filtro por categoria
-                      DropdownButton<String>(
-                        value: _categoriaFiltro ?? 'Todos',
-                        dropdownColor: Cores.cardBlack,
+                // Filtros
+                Row(
+                  children: [
+                    // Busca por texto
+                    Expanded(
+                      child: TextField(
+                        onChanged: _filtrarCardapios,
                         style: TextStyle(color: Cores.textWhite),
-                        items: categorias.map((cat) {
-                          return DropdownMenuItem(value: cat, child: Text(cat));
-                        }).toList(),
-                        onChanged: _filtrarPorCategoria,
-                      ),
-                      SizedBox(width: 16),
-
-                      // Botão adicionar item
-                      ElevatedButton.icon(
-                        onPressed: _mostrarDialogAdicionarItem,
-                        icon: Icon(Icons.add),
-                        label: Text('Adicionar Item'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Cores.primaryRed,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
-                          textStyle: TextStyle(fontSize: 16),
-                          shape: RoundedRectangleBorder(
+                        decoration: InputDecoration(
+                          hintText: 'Buscar item...',
+                          hintStyle: TextStyle(color: Cores.textGray),
+                          prefixIcon: Icon(Icons.search, color: Cores.textGray),
+                          filled: true,
+                          fillColor: Cores.cardBlack,
+                          border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Cores.borderGray),
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    SizedBox(width: 16),
 
-                  SizedBox(height: 24),
+                    // Filtro por categoria
+                    DropdownButton<String>(
+                      value: _categoriaFiltro ?? 'Todos',
+                      dropdownColor: Cores.cardBlack,
+                      style: TextStyle(color: Cores.textWhite),
+                      items: categorias.map((cat) {
+                        return DropdownMenuItem(value: cat, child: Text(cat));
+                      }).toList(),
+                      onChanged: _filtrarPorCategoria,
+                    ),
+                    SizedBox(width: 16),
 
-                  // Stream de cardápios
-                  // Replace the existing StreamBuilder section with this:
+                    // Botão adicionar item
+                    ElevatedButton.icon(
+                      onPressed: _mostrarDialogAdicionarItem,
+                      icon: Icon(Icons.add),
+                      label: Text('Adicionar Item'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Cores.primaryRed,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        textStyle: TextStyle(fontSize: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
 
-                  FutureBuilder<Stream<List<Cardapio>>>(
-                    future: _controller.buscarCardapioTempoReal(),
-                    builder: (context, futureSnapshot) {
-                      if (futureSnapshot.connectionState == ConnectionState.waiting) {
-                        return Center(child: CircularProgressIndicator());
-                      }
-                      if (futureSnapshot.hasError) {
-                        return Text(
-                          'Erro: ${futureSnapshot.error}',
-                          style: TextStyle(color: Colors.red),
-                        );
-                      }
-                      if (!futureSnapshot.hasData) {
-                        return Text(
-                          'Stream não disponível',
-                          style: TextStyle(color: Colors.red),
-                        );
-                      }
+                SizedBox(height: 24),
 
-                      return StreamBuilder<List<Cardapio>>(
-                        stream: futureSnapshot.data!,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return Center(child: CircularProgressIndicator());
-                          }
-                          if (snapshot.hasError) {
-                            return Text(
-                              'Erro: ${snapshot.error}',
-                              style: TextStyle(color: Colors.red),
-                            );
-                          }
-
-                          final lista = snapshot.data ?? [];
-                          final filtrados = lista.where((item) {
-                            final textoOk =
-                                _busca.trim().isEmpty ||
-                                    item.nome.toLowerCase().contains(
-                                      _busca.toLowerCase(),
-                                    ) ||
-                                    item.descricao.toLowerCase().contains(
-                                      _busca.toLowerCase(),
-                                    );
-
-                            final categoriaOk =
-                                _categoriaFiltro == null ||
-                                    item.categoria == _categoriaFiltro;
-
-                            return textoOk && categoriaOk;
-                          }).toList();
-
-                          if (filtrados.isEmpty) {
-                            return Text(
-                              'Nenhum item encontrado.',
-                              style: TextStyle(color: Cores.textGray),
-                            );
-                          }
-
-                          final Map<String, List<Cardapio>> agrupadoPorCategoria = {};
-                          for (var item in filtrados) {
-                            agrupadoPorCategoria
-                                .putIfAbsent(item.categoria, () => [])
-                                .add(item);
-                          }
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: agrupadoPorCategoria.entries.map((entry) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Exibe título da categoria só se não estiver filtrando
-                                  if (_categoriaFiltro == null)
-                                    Text(
-                                      entry.key,
-                                      style: TextStyle(
-                                        color: Cores.textWhite,
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  if (_categoriaFiltro == null)
-                                    SizedBox(height: 12),
-
-                                  LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      return Wrap(
-                                        spacing: 16,
-                                        runSpacing: 16,
-                                        children: entry.value.map((cardapio) {
-                                          return Container(
-                                            width: constraints.maxWidth > 900
-                                                ? constraints.maxWidth / 3 - 20
-                                                : constraints.maxWidth,
-                                            padding: EdgeInsets.all(16),
-                                            decoration: BoxDecoration(
-                                              color: Cores.cardBlack,
-                                              borderRadius: BorderRadius.circular(12),
-                                              border: Border.all(color: Cores.borderGray),
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  cardapio.nome,
-                                                  style: TextStyle(
-                                                    color: Cores.textWhite,
-                                                    fontSize: 20,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                                SizedBox(height: 8),
-                                                Text(
-                                                  cardapio.descricao,
-                                                  style: TextStyle(color: Cores.textGray),
-                                                ),
-                                                SizedBox(height: 8),
-                                                Text(
-                                                  'R\$ ${cardapio.preco.toStringAsFixed(2)}',
-                                                  style: TextStyle(color: Cores.textWhite),
-                                                ),
-                                                SizedBox(height: 8),
-                                                Text(
-                                                  cardapio.ativo ? 'Ativo' : 'Suspenso',
-                                                  style: TextStyle(
-                                                    color: cardapio.ativo
-                                                        ? Colors.green
-                                                        : Colors.red,
-                                                  ),
-                                                ),
-                                                SizedBox(height: 16),
-                                                Row(
-                                                  mainAxisAlignment: MainAxisAlignment.end,
-                                                  children: [
-                                                    IconButton(
-                                                      icon: Icon(Icons.edit, color: Cores.lightRed),
-                                                      onPressed: () => _mostrarDialogEditarItem(cardapio),
-                                                    ),
-                                                    IconButton(
-                                                      icon: Icon(
-                                                        cardapio.ativo ? Icons.block : Icons.check_circle,
-                                                        color: Colors.amber,
-                                                      ),
-                                                      onPressed: () => _alternarSuspensao(cardapio),
-                                                    ),
-                                                    IconButton(
-                                                      icon: Icon(Icons.delete, color: Colors.red),
-                                                      onPressed: () => _mostrarDialogExcluirItem(cardapio.uid),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        }).toList(),
-                                      );
-                                    },
-                                  ),
-                                  SizedBox(height: 24),
-                                ],
-                              );
-                            }).toList(),
-                          );
-                        },
+                // Stream de cardápios
+                // Replace the existing StreamBuilder section with this:
+                FutureBuilder<Stream<List<Cardapio>>>(
+                  future: _controller.buscarCardapioTempoReal(),
+                  builder: (context, futureSnapshot) {
+                    if (futureSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    }
+                    if (futureSnapshot.hasError) {
+                      return Text(
+                        'Erro: ${futureSnapshot.error}',
+                        style: TextStyle(color: Colors.red),
                       );
-                    },
-                  )
-                ],
-              ),
+                    }
+                    if (!futureSnapshot.hasData) {
+                      return Text(
+                        'Stream não disponível',
+                        style: TextStyle(color: Colors.red),
+                      );
+                    }
+
+                    return StreamBuilder<List<Cardapio>>(
+                      stream: futureSnapshot.data!,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Center(child: CircularProgressIndicator());
+                        }
+                        if (snapshot.hasError) {
+                          return Text(
+                            'Erro: ${snapshot.error}',
+                            style: TextStyle(color: Colors.red),
+                          );
+                        }
+
+                        final lista = snapshot.data ?? [];
+                        final filtrados = lista.where((item) {
+                          final textoOk =
+                              _busca.trim().isEmpty ||
+                              item.nome.toLowerCase().contains(
+                                _busca.toLowerCase(),
+                              ) ||
+                              item.descricao.toLowerCase().contains(
+                                _busca.toLowerCase(),
+                              );
+
+                          final categoriaOk =
+                              _categoriaFiltro == null ||
+                              item.categoria == _categoriaFiltro;
+
+                          return textoOk && categoriaOk;
+                        }).toList();
+
+                        if (filtrados.isEmpty) {
+                          return Text(
+                            'Nenhum item encontrado.',
+                            style: TextStyle(color: Cores.textGray),
+                          );
+                        }
+
+                        final Map<String, List<Cardapio>> agrupadoPorCategoria =
+                            {};
+                        for (var item in filtrados) {
+                          agrupadoPorCategoria
+                              .putIfAbsent(item.categoria, () => [])
+                              .add(item);
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: agrupadoPorCategoria.entries.map((entry) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Exibe título da categoria só se não estiver filtrando
+                                if (_categoriaFiltro == null)
+                                  Text(
+                                    entry.key,
+                                    style: TextStyle(
+                                      color: Cores.textWhite,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                if (_categoriaFiltro == null)
+                                  SizedBox(height: 12),
+
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    return Wrap(
+                                      spacing: 16,
+                                      runSpacing: 16,
+                                      children: entry.value.map((cardapio) {
+                                        return Container(
+                                          width: constraints.maxWidth > 900
+                                              ? constraints.maxWidth / 3 - 20
+                                              : constraints.maxWidth,
+                                          padding: EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: Cores.cardBlack,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            border: Border.all(
+                                              color: Cores.borderGray,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                cardapio.nome,
+                                                style: TextStyle(
+                                                  color: Cores.textWhite,
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              SizedBox(height: 8),
+                                              Text(
+                                                cardapio.descricao,
+                                                style: TextStyle(
+                                                  color: Cores.textGray,
+                                                ),
+                                              ),
+                                              SizedBox(height: 8),
+                                              Text(
+                                                'R\$ ${cardapio.preco.toStringAsFixed(2)}',
+                                                style: TextStyle(
+                                                  color: Cores.textWhite,
+                                                ),
+                                              ),
+                                              SizedBox(height: 8),
+                                              Text(
+                                                cardapio.ativo
+                                                    ? 'Ativo'
+                                                    : 'Suspenso',
+                                                style: TextStyle(
+                                                  color: cardapio.ativo
+                                                      ? Colors.green
+                                                      : Colors.red,
+                                                ),
+                                              ),
+                                              SizedBox(height: 16),
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.end,
+                                                children: [
+                                                  IconButton(
+                                                    icon: Icon(
+                                                      Icons.edit,
+                                                      color: Cores.lightRed,
+                                                    ),
+                                                    onPressed: () =>
+                                                        _mostrarDialogEditarItem(
+                                                          cardapio,
+                                                        ),
+                                                  ),
+                                                  IconButton(
+                                                    icon: Icon(
+                                                      cardapio.ativo
+                                                          ? Icons.block
+                                                          : Icons.check_circle,
+                                                      color: Colors.amber,
+                                                    ),
+                                                    onPressed: () =>
+                                                        _alternarSuspensao(
+                                                          cardapio,
+                                                        ),
+                                                  ),
+                                                  IconButton(
+                                                    icon: Icon(
+                                                      Icons.delete,
+                                                      color: Colors.red,
+                                                    ),
+                                                    onPressed: () =>
+                                                        _mostrarDialogExcluirItem(
+                                                          cardapio.uid,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    );
+                                  },
+                                ),
+                                SizedBox(height: 24),
+                              ],
+                            );
+                          }).toList(),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
 }

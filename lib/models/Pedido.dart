@@ -9,6 +9,8 @@ class Pedido {
   List<ItemCardapio> itens;
   String statusAtual;
   String? observacao;
+  String? gerenteUid;
+  bool pago; // Campo adicionado para controle de pagamento
 
   // Lista de status possíveis
   static const List<String> statusOpcoes = [
@@ -26,11 +28,13 @@ class Pedido {
     required this.itens,
     required this.statusAtual,
     this.observacao,
+    this.gerenteUid,
+    this.pago = false, // Valor padrão false
   });
 
-  // Calcula o total do pedido
+  // Calcula o total do pedido considerando quantidade
   double calcularTotal() {
-    return itens.fold<double>(0, (total, item) => total + item.preco);
+    return itens.fold<double>(0, (total, item) => total + (item.preco * item.quantidade));
   }
 
   // Converte o pedido para Map para salvar no Firebase
@@ -42,6 +46,8 @@ class Pedido {
       'itens': itens.map((item) => item.toMap()).toList(),
       'statusAtual': statusAtual,
       'observacao': observacao,
+      'gerenteUid': gerenteUid,
+      'pago': pago, // Incluído no mapeamento
     };
   }
 
@@ -55,11 +61,12 @@ class Pedido {
           .map((item) => ItemCardapio.fromMap(item as Map<String, dynamic>, item['uid'] ?? ''))
           .toList(),
       statusAtual: map['statusAtual'] ?? 'Aberto',
-      observacao: map['observacao'],
+      observacao: map['observacao'] ?? '',
+      gerenteUid: map['gerenteUid'],
+      pago: map['pago'] ?? false, // Recupera o campo do Firebase
     );
   }
 
-  // Copia o pedido com novos valores
   Pedido copyWith({
     String? uid,
     DateTime? horario,
@@ -67,6 +74,8 @@ class Pedido {
     List<ItemCardapio>? itens,
     String? statusAtual,
     String? observacao,
+    String? gerenteUid,
+    bool? pago,
   }) {
     return Pedido(
       uid: uid ?? this.uid,
@@ -75,6 +84,8 @@ class Pedido {
       itens: itens ?? this.itens,
       statusAtual: statusAtual ?? this.statusAtual,
       observacao: observacao ?? this.observacao,
+      gerenteUid: gerenteUid ?? this.gerenteUid,
+      pago: pago ?? this.pago,
     );
   }
 }

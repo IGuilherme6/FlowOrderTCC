@@ -45,21 +45,22 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
       SnackBar(content: Text(await mensagem), backgroundColor: Colors.blue),
     );
   }
-  Future<void> _ExcluirFuncionario(String idFuncionario) async{
+
+  Future<void> _ExcluirFuncionario(String idFuncionario) async {
     String mensagem = await usuarioController.deletarFuncionario(idFuncionario);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(await mensagem), backgroundColor: Colors.blue),
     );
   }
 
-  Future<void> _ativarFuncionario(String id) async{
+  Future<void> _ativarFuncionario(String id) async {
     String mensagem = await usuarioController.ativarFuncionario(id);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(await mensagem), backgroundColor: Colors.blue),
     );
   }
 
-  Future<void> _desativarFuncionario(String id) async{
+  Future<void> _desativarFuncionario(String id) async {
     String mensagem = await usuarioController.desativarFuncionario(id);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(await mensagem), backgroundColor: Colors.blue),
@@ -154,7 +155,6 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
               SizedBox(width: 16),
               _buildDropdownStatus(),
             ],
-
           ),
           SizedBox(height: 16),
 
@@ -162,7 +162,9 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
           Container(
             height: 360,
             child: StreamBuilder<QuerySnapshot>(
-              stream: _tipoLista ? usuarioController.listarFuncionariosAtivos() : usuarioController.listarFuncionariosInativos(),
+              stream: _tipoLista
+                  ? usuarioController.listarFuncionariosAtivos()
+                  : usuarioController.listarFuncionariosInativos(),
               builder: (context, snapshot) {
                 // Estados de carregamento e erro
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -262,158 +264,224 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                                 ),
                             ],
                           ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                /// Botão de Editar ou Deletar
-                                _tipoLista
-                                    ? IconButton(
-                                  icon: Icon(
-                                    Icons.edit,
-                                    color: Cores.lightRed,
-                                    size: 20,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _editarFuncionario = true;
-                                      _selectedCargo = funcionario['cargo'];
-                                      _phoneController.text = funcionario['telefone'] ?? '';
-                                      _nameController.text = funcionario['nome'] ?? '';
-                                      _emailController.text = funcionario['email'] ?? '';
-                                      _cpfController.text = funcionario['cpf'] ?? '';
-                                      _uidController = funcionario['uid'] ?? '';
-                                    });
-                                  },
-                                  tooltip: 'Editar funcionário',
-                                )
-                                    : IconButton(
-                                  icon: Icon(
-                                    Icons.delete,
-                                    color: Cores.lightRed,
-                                    size: 20,
-                                  ),
-                                  onPressed: () async {
-                                    final confirmar = await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        backgroundColor: Cores.backgroundBlack,
-                                        title: Text(
-                                          'Confirmar Exclusão',
-                                          style: TextStyle(color: Cores.textWhite),
-                                        ),
-                                        content: Text(
-                                          'Tem certeza que deseja excluir este funcionário? a exclusão será permanente',
-                                          style: TextStyle(color: Cores.textWhite),
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(context, false),
-                                            child: Text(
-                                              'Cancelar',
-                                              style: TextStyle(color: Cores.primaryRed),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              /// Botão de Editar ou Deletar
+                              _tipoLista
+                                  ? IconButton(
+                                      icon: Icon(
+                                        Icons.edit,
+                                        color: Cores.lightRed,
+                                        size: 20,
+                                      ),
+                                      onPressed: () {
+                                        setState(() {
+                                          _editarFuncionario = true;
+                                          _selectedCargo = funcionario['cargo'];
+                                          _phoneController.text =
+                                              funcionario['telefone'] ?? '';
+                                          _nameController.text =
+                                              funcionario['nome'] ?? '';
+                                          _emailController.text =
+                                              funcionario['email'] ?? '';
+                                          _cpfController.text =
+                                              funcionario['cpf'] ?? '';
+                                          _uidController =
+                                              funcionario['uid'] ?? '';
+                                        });
+                                      },
+                                      tooltip: 'Editar funcionário',
+                                    )
+                                  : IconButton(
+                                      icon: Icon(
+                                        Icons.delete,
+                                        color: Cores.lightRed,
+                                        size: 20,
+                                      ),
+                                      onPressed: () async {
+                                        final confirmar = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            backgroundColor:
+                                                Cores.backgroundBlack,
+                                            title: Text(
+                                              'Confirmar Exclusão',
+                                              style: TextStyle(
+                                                color: Cores.textWhite,
+                                              ),
                                             ),
-                                          ),
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(context, true),
-                                            child: Text(
-                                              'Excluir',
-                                              style: TextStyle(color: Cores.primaryRed),
+                                            content: Text(
+                                              'Tem certeza que deseja excluir este funcionário? a exclusão será permanente',
+                                              style: TextStyle(
+                                                color: Cores.textWhite,
+                                              ),
                                             ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                  context,
+                                                  false,
+                                                ),
+                                                child: Text(
+                                                  'Cancelar',
+                                                  style: TextStyle(
+                                                    color: Cores.primaryRed,
+                                                  ),
+                                                ),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                  context,
+                                                  true,
+                                                ),
+                                                child: Text(
+                                                  'Excluir',
+                                                  style: TextStyle(
+                                                    color: Cores.primaryRed,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ],
+                                        );
+
+                                        if (confirmar == true) {
+                                          _ExcluirFuncionario(doc.id);
+                                        }
+                                      },
+                                      tooltip: 'Excluir funcionário',
+                                    ),
+
+                              /// Botão Ativar / Desativar
+                              _tipoLista
+                                  ? IconButton(
+                                      icon: Icon(
+                                        Icons.person_remove,
+                                        color: Cores.primaryRed,
+                                        size: 20,
                                       ),
-                                    );
-
-                                    if (confirmar == true) {
-                                      _ExcluirFuncionario(doc.id);
-                                    }
-                                  },
-                                  tooltip: 'Excluir funcionário',
-                                ),
-
-                                /// Botão Ativar / Desativar
-                                _tipoLista
-                                    ? IconButton(
-                                  icon: Icon(
-                                    Icons.person_remove,
-                                    color: Cores.primaryRed,
-                                    size: 20,
-                                  ),
-                                  onPressed: () async {
-                                    final confirmar = await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        backgroundColor: Cores.backgroundBlack,
-                                        title: Text('Confirmar Desativação',
-                                            style: TextStyle(color: Cores.textWhite)),
-                                        content: Text(
-                                            'Tem certeza que deseja desativar este funcionário?',
-                                            style: TextStyle(color: Cores.textWhite)),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(context, false),
-                                            child: Text('Cancelar',
-                                                style: TextStyle(color: Cores.primaryRed)),
+                                      onPressed: () async {
+                                        final confirmar = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            backgroundColor:
+                                                Cores.backgroundBlack,
+                                            title: Text(
+                                              'Confirmar Desativação',
+                                              style: TextStyle(
+                                                color: Cores.textWhite,
+                                              ),
+                                            ),
+                                            content: Text(
+                                              'Tem certeza que deseja desativar este funcionário?',
+                                              style: TextStyle(
+                                                color: Cores.textWhite,
+                                              ),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                  context,
+                                                  false,
+                                                ),
+                                                child: Text(
+                                                  'Cancelar',
+                                                  style: TextStyle(
+                                                    color: Cores.primaryRed,
+                                                  ),
+                                                ),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                  context,
+                                                  true,
+                                                ),
+                                                child: Text(
+                                                  'Desativar',
+                                                  style: TextStyle(
+                                                    color: Cores.primaryRed,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(context, true),
-                                            child: Text('Desativar',
-                                                style: TextStyle(color: Cores.primaryRed)),
-                                          ),
-                                        ],
+                                        );
+
+                                        if (confirmar == true) {
+                                          _desativarFuncionario(doc.id);
+                                        }
+                                      },
+                                      tooltip: 'Desativar funcionário',
+                                    )
+                                  : IconButton(
+                                      icon: Icon(
+                                        Icons.person_add,
+                                        color: Cores.primaryRed,
+                                        size: 20,
                                       ),
-                                    );
-
-                                    if (confirmar == true) {
-                                      _desativarFuncionario(doc.id);
-                                    }
-                                  },
-                                  tooltip: 'Desativar funcionário',
-                                )
-                                    : IconButton(
-                                  icon: Icon(
-                                    Icons.person_add,
-                                    color: Cores.primaryRed,
-                                    size: 20,
-                                  ),
-                                  onPressed: () async {
-                                    final confirmar = await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        backgroundColor: Cores.backgroundBlack,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
-                                          side: BorderSide(color: Cores.borderGray),
-                                        ),
-                                        title: Text('Confirmar Ativação',
-                                            style: TextStyle(color: Cores.textWhite)),
-                                        content: Text(
-                                            'Tem certeza que deseja ativar este funcionário?',
-                                            style: TextStyle(color: Cores.textWhite)),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(context, false),
-                                            child: Text('Cancelar',
-                                                style: TextStyle(color: Cores.primaryRed)),
+                                      onPressed: () async {
+                                        final confirmar = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            backgroundColor:
+                                                Cores.backgroundBlack,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              side: BorderSide(
+                                                color: Cores.borderGray,
+                                              ),
+                                            ),
+                                            title: Text(
+                                              'Confirmar Ativação',
+                                              style: TextStyle(
+                                                color: Cores.textWhite,
+                                              ),
+                                            ),
+                                            content: Text(
+                                              'Tem certeza que deseja ativar este funcionário?',
+                                              style: TextStyle(
+                                                color: Cores.textWhite,
+                                              ),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                  context,
+                                                  false,
+                                                ),
+                                                child: Text(
+                                                  'Cancelar',
+                                                  style: TextStyle(
+                                                    color: Cores.primaryRed,
+                                                  ),
+                                                ),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                  context,
+                                                  true,
+                                                ),
+                                                child: Text(
+                                                  'Ativar',
+                                                  style: TextStyle(
+                                                    color: Cores.primaryRed,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(context, true),
-                                            child: Text('Ativar',
-                                                style: TextStyle(color: Cores.primaryRed)),
-                                          ),
-                                        ],
-                                      ),
-                                    );
+                                        );
 
-                                    if (confirmar == true) {
-                                      _ativarFuncionario(doc.id);
-                                    }
-                                  },
-                                  tooltip: 'Ativar funcionário',
-                                ),
-                              ],
-                            )
-
+                                        if (confirmar == true) {
+                                          _ativarFuncionario(doc.id);
+                                        }
+                                      },
+                                      tooltip: 'Ativar funcionário',
+                                    ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -583,7 +651,8 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
                         ),
                       ),
                       onPressed: () async {
-                        if (_editarFuncionario && _formKey.currentState!.validate()) {
+                        if (_editarFuncionario &&
+                            _formKey.currentState!.validate()) {
                           final funcionario = Usuario();
                           funcionario.nome = _nameController.text;
                           funcionario.telefone = _phoneController.text;
@@ -679,9 +748,9 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
     bool obscure = false,
     Widget? suffixIcon,
     String? Function(String?)? validator,
-        bool enabled = true,
-        List<TextInputFormatter>? inputFormatters,
-        TextInputType? keyboardType,
+    bool enabled = true,
+    List<TextInputFormatter>? inputFormatters,
+    TextInputType? keyboardType,
   }) {
     return TextFormField(
       controller: controller,
@@ -742,11 +811,7 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.person,
-                  color: Cores.primaryRed,
-                  size: 16,
-                ),
+                Icon(Icons.person, color: Cores.primaryRed, size: 16),
                 SizedBox(width: 8),
                 Text(status),
               ],
@@ -765,7 +830,6 @@ class _TelaCadastroUsuarioState extends State<TelaCadastroUsuario> {
       ),
     );
   }
-
 
   Widget _buildDropdownCargo() {
     return DropdownButtonFormField<String>(

@@ -35,12 +35,14 @@ class MockUsuarioFirebase {
 
   // Métodos para configurar o mock nos testes
   void setUsuarioLogado(String? id) => _usuarioLogado = id;
-  void setCpfExistente(String cpf, bool existe) => _cpfsExistentes[cpf] = existe;
+  void setCpfExistente(String cpf, bool existe) =>
+      _cpfsExistentes[cpf] = existe;
   void reset() {
     _usuarioLogado = null;
     _cpfsExistentes.clear();
     _chamadas.clear();
   }
+
   List<String> get chamadas => _chamadas;
 
   // Implementação dos métodos
@@ -59,12 +61,18 @@ class MockUsuarioFirebase {
     return _cpfsExistentes[cpf] ?? false;
   }
 
-  Future<String> atualizarStatusFuncionario(String funcionarioId, bool status) async {
+  Future<String> atualizarStatusFuncionario(
+    String funcionarioId,
+    bool status,
+  ) async {
     _chamadas.add('atualizarStatusFuncionario:$funcionarioId:$status');
     return 'Status atualizado com sucesso';
   }
 
-  Future<void> atualizarDadosFuncionario(String gerenteId, Usuario usuario) async {
+  Future<void> atualizarDadosFuncionario(
+    String gerenteId,
+    Usuario usuario,
+  ) async {
     _chamadas.add('atualizarDadosFuncionario:$gerenteId:${usuario.nome}');
   }
 
@@ -106,14 +114,20 @@ class UsuarioController {
     String? gerenteId = usuarioFirebase.pegarIdUsuarioLogado();
     if (gerenteId == null) throw Exception('Nenhum gerente logado');
 
-    return await usuarioFirebase.atualizarStatusFuncionario(funcionarioId, false);
+    return await usuarioFirebase.atualizarStatusFuncionario(
+      funcionarioId,
+      false,
+    );
   }
 
   Future<String> ativarFuncionario(String funcionarioId) async {
     String? gerenteId = usuarioFirebase.pegarIdUsuarioLogado();
     if (gerenteId == null) throw Exception('Nenhum gerente logado');
 
-    return await usuarioFirebase.atualizarStatusFuncionario(funcionarioId, true);
+    return await usuarioFirebase.atualizarStatusFuncionario(
+      funcionarioId,
+      true,
+    );
   }
 
   Future<String> editarFuncionario(Usuario usuario) async {
@@ -182,30 +196,42 @@ void main() {
 
         // Assert
         expect(resultado, 'Erro: CPF já cadastrado');
-        expect(mockUsuarioFirebase.chamadas, contains('verificarCpfExistenteGerentes:12345678901'));
-      });
-
-      test('deve cadastrar usuário com sucesso quando CPF não existe', () async {
-        // Arrange
-        final usuario = Usuario(
-          nome: 'Maria Silva',
-          email: 'maria@teste.com',
-          telefone: '11888888888',
-          cpf: '98765432100',
-          cargo: 'Vendedor',
-          senha: '654321',
+        expect(
+          mockUsuarioFirebase.chamadas,
+          contains('verificarCpfExistenteGerentes:12345678901'),
         );
-
-        mockUsuarioFirebase.setCpfExistente('98765432100', false);
-
-        // Act
-        final resultado = await controller.cadastrarUsuario(usuario);
-
-        // Assert
-        expect(resultado, 'Conta Criada com sucesso');
-        expect(mockUsuarioFirebase.chamadas, contains('verificarCpfExistenteGerentes:98765432100'));
-        expect(mockUsuarioFirebase.chamadas, contains('salvarUsuario:Maria Silva'));
       });
+
+      test(
+        'deve cadastrar usuário com sucesso quando CPF não existe',
+        () async {
+          // Arrange
+          final usuario = Usuario(
+            nome: 'Maria Silva',
+            email: 'maria@teste.com',
+            telefone: '11888888888',
+            cpf: '98765432100',
+            cargo: 'Vendedor',
+            senha: '654321',
+          );
+
+          mockUsuarioFirebase.setCpfExistente('98765432100', false);
+
+          // Act
+          final resultado = await controller.cadastrarUsuario(usuario);
+
+          // Assert
+          expect(resultado, 'Conta Criada com sucesso');
+          expect(
+            mockUsuarioFirebase.chamadas,
+            contains('verificarCpfExistenteGerentes:98765432100'),
+          );
+          expect(
+            mockUsuarioFirebase.chamadas,
+            contains('salvarUsuario:Maria Silva'),
+          );
+        },
+      );
 
       test('deve retornar erro quando verificação de CPF falha', () async {
         // Arrange
@@ -241,7 +267,10 @@ void main() {
         // Assert
         expect(resultado, 'Status atualizado com sucesso');
         expect(mockUsuarioFirebase.chamadas, contains('pegarIdUsuarioLogado'));
-        expect(mockUsuarioFirebase.chamadas, contains('atualizarStatusFuncionario:func123:false'));
+        expect(
+          mockUsuarioFirebase.chamadas,
+          contains('atualizarStatusFuncionario:func123:false'),
+        );
       });
 
       test('deve lançar exceção quando nenhum gerente está logado', () async {
@@ -250,7 +279,7 @@ void main() {
 
         // Act & Assert
         expect(
-              () => controller.desativarFuncionario('func123'),
+          () => controller.desativarFuncionario('func123'),
           throwsA(isA<Exception>()),
         );
       });
@@ -267,7 +296,10 @@ void main() {
 
         // Assert
         expect(resultado, 'Status atualizado com sucesso');
-        expect(mockUsuarioFirebase.chamadas, contains('atualizarStatusFuncionario:func123:true'));
+        expect(
+          mockUsuarioFirebase.chamadas,
+          contains('atualizarStatusFuncionario:func123:true'),
+        );
       });
 
       test('deve lançar exceção quando nenhum gerente está logado', () async {
@@ -276,7 +308,7 @@ void main() {
 
         // Act & Assert
         expect(
-              () => controller.ativarFuncionario('func123'),
+          () => controller.ativarFuncionario('func123'),
           throwsA(isA<Exception>()),
         );
       });
@@ -302,7 +334,10 @@ void main() {
 
         // Assert
         expect(resultado, 'Funcionário editado com sucesso');
-        expect(mockUsuarioFirebase.chamadas, contains('atualizarDadosFuncionario:gerente123:João Editado'));
+        expect(
+          mockUsuarioFirebase.chamadas,
+          contains('atualizarDadosFuncionario:gerente123:João Editado'),
+        );
       });
 
       test('deve retornar erro quando nenhum gerente está logado', () async {
@@ -337,7 +372,10 @@ void main() {
 
         // Assert
         expect(resultado, 'Funcionario foi apagado com sucesso');
-        expect(mockUsuarioFirebase.chamadas, contains('apagarFuncionario:gerente123:func123'));
+        expect(
+          mockUsuarioFirebase.chamadas,
+          contains('apagarFuncionario:gerente123:func123'),
+        );
       });
 
       test('deve retornar erro quando nenhum gerente está logado', () async {
@@ -362,7 +400,10 @@ void main() {
 
         // Assert
         expect(resultado, true);
-        expect(mockUsuarioFirebase.chamadas, contains('verificarCpfExistenteGerentes:12345678901'));
+        expect(
+          mockUsuarioFirebase.chamadas,
+          contains('verificarCpfExistenteGerentes:12345678901'),
+        );
       });
 
       test('deve retornar false quando CPF não existe', () async {

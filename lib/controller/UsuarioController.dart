@@ -5,8 +5,6 @@ import '../models/Usuario.dart';
 class UsuarioController {
   final UsuarioFirebase _usuarioFirebase = UsuarioFirebase();
 
-
-
   /// Cadastro de Usuario
   Future<String> cadastrarUsuario(Usuario usuario) async {
     try {
@@ -19,7 +17,6 @@ class UsuarioController {
 
       // Salvar no Firestore
       return await _usuarioFirebase.salvarUsuario(usuario);
-
     } catch (e) {
       return 'Erro ao cadastrar: ${e.toString()}';
     }
@@ -32,7 +29,6 @@ class UsuarioController {
     if (gerenteId == null) {
       throw Exception('Nenhum Usuario logado');
     }
-
 
     return _usuarioFirebase.listarFuncionariosAtivos(gerenteId);
   }
@@ -53,7 +49,10 @@ class UsuarioController {
     String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
     if (gerenteId == null) throw Exception('Nenhum gerente logado');
 
-    return await _usuarioFirebase.atualizarStatusFuncionario( funcionarioId, false);
+    return await _usuarioFirebase.atualizarStatusFuncionario(
+      funcionarioId,
+      false,
+    );
   }
 
   /// Ativar funcionário
@@ -61,7 +60,10 @@ class UsuarioController {
     String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
     if (gerenteId == null) throw Exception('Nenhum gerente logado');
 
-    return await _usuarioFirebase.atualizarStatusFuncionario( funcionarioId, true);
+    return await _usuarioFirebase.atualizarStatusFuncionario(
+      funcionarioId,
+      true,
+    );
   }
 
   /// Editar funcionário
@@ -91,17 +93,15 @@ class UsuarioController {
     }
   }
 
-  Future<String> deletarFuncionario(String id) async{
+  Future<String> deletarFuncionario(String id) async {
     String? gerenteId = _usuarioFirebase.pegarIdUsuarioLogado();
     if (gerenteId == null) return 'Erro: Nenhum gerente logado';
 
-    try{
+    try {
       await _usuarioFirebase.apagarFuncionario(gerenteId, id);
       return 'Funcioanrio foi apagado com sucesso';
-    }catch (e){
+    } catch (e) {
       return 'erro ao deletar';
     }
   }
-
-
 }

@@ -46,14 +46,15 @@ class MesaController {
   }
 
   /// Stream de mesas do gerente (tempo real)
-  Stream<List<Mesa>> streamMesas() async*{
+  Stream<List<Mesa>> streamMesas() async* {
     String? userId = _mesaFirebase.pegarIdUsuarioLogado();
     if (userId == null) {
       yield [];
       return;
     }
 
-    Stream<QuerySnapshot<Object?>> mesasStream = await _mesaFirebase.streamMesas(userId);
+    Stream<QuerySnapshot<Object?>> mesasStream = await _mesaFirebase
+        .streamMesas(userId);
 
     await for (QuerySnapshot snapshot in mesasStream) {
       List<Mesa> mesas = _mesaFirebase.querySnapshotParaMesas(snapshot);
@@ -94,7 +95,6 @@ class MesaController {
       throw Exception('Erro ao atualizar mesa: ${e.toString()}');
     }
   }
-
 
   /// Verificar se mesa já existe
   Future<bool> verificarMesaExistente(int numero) async {

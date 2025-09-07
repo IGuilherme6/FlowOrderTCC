@@ -18,7 +18,9 @@ class CardapioFirebase {
 
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('Usuarios').doc(userId).get();
+          .collection('Usuarios')
+          .doc(userId)
+          .get();
       final userData = doc.data() as Map<String, dynamic>?;
       final gerenteUid = userData?['gerenteUid'] as String?;
       return gerenteUid;
@@ -33,12 +35,14 @@ class CardapioFirebase {
     try {
       if (Id.isEmpty) throw Exception('inválido');
 
-      final doc = await  FirebaseFirestore.instance
-          .collection('Usuarios').doc(Id).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('Usuarios')
+          .doc(Id)
+          .get();
       final userData = doc.data() as Map<String, dynamic>?;
       final cargo = userData?['cargo'] as String?;
 
-      if(cargo != 'Gerente') throw Exception('Nenhum Gerente Logado');
+      if (cargo != 'Gerente') throw Exception('Nenhum Gerente Logado');
 
       // Normaliza/valida campos mínimos
       final nome = (cardapio.nome ?? '').trim().isEmpty
@@ -50,17 +54,15 @@ class CardapioFirebase {
       final preco = cardapio.preco ?? 0.0;
       final categoria = (cardapio.categoria ?? 'Outros').trim();
 
-      DocumentReference docRef = await _firestore
-          .collection('Cardapios')
-          .add({
-            'nome': nome,
-            'descricao': descricao,
-            'preco': preco,
-            'categoria': categoria,
-            'ativo': true,
-            'gerenteUid': Id,
-            'criadoEm': FieldValue.serverTimestamp(),
-          });
+      DocumentReference docRef = await _firestore.collection('Cardapios').add({
+        'nome': nome,
+        'descricao': descricao,
+        'preco': preco,
+        'categoria': categoria,
+        'ativo': true,
+        'gerenteUid': Id,
+        'criadoEm': FieldValue.serverTimestamp(),
+      });
 
       // atualiza campo uid no documento (opcional)
       await docRef.update({'uid': docRef.id});
@@ -89,7 +91,7 @@ class CardapioFirebase {
       if (gerenteId.isEmpty) return const Stream.empty();
       return _firestore
           .collection('Cardapios')
-          .where('gerenteUid',isEqualTo: gerenteId)
+          .where('gerenteUid', isEqualTo: gerenteId)
           .snapshots();
     } catch (e) {
       return const Stream.empty();
@@ -130,17 +132,14 @@ class CardapioFirebase {
         throw Exception('UID do cardápio é necessário para atualizar');
       }
 
-      await _firestore
-          .collection('Cardapios')
-          .doc(cardapio.uid)
-          .update({
-            'nome': cardapio.nome,
-            'descricao': cardapio.descricao,
-            'preco': cardapio.preco,
-            'categoria': cardapio.categoria,
-            'ativo': cardapio.ativo,
-            'atualizadoEm': FieldValue.serverTimestamp(),
-          });
+      await _firestore.collection('Cardapios').doc(cardapio.uid).update({
+        'nome': cardapio.nome,
+        'descricao': cardapio.descricao,
+        'preco': cardapio.preco,
+        'categoria': cardapio.categoria,
+        'ativo': cardapio.ativo,
+        'atualizadoEm': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
       throw Exception('Erro ao atualizar cardápio: ${e.toString()}');
     }
@@ -151,37 +150,37 @@ class CardapioFirebase {
     try {
       if (gerenteId.isEmpty) throw Exception('GerenteId inválido');
 
-      final doc = await  FirebaseFirestore.instance
-          .collection('Usuarios').doc(gerenteId).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('Usuarios')
+          .doc(gerenteId)
+          .get();
       final userData = doc.data() as Map<String, dynamic>?;
       final cargo = userData?['cargo'] as String?;
 
-      if(cargo == 'Gerente') {
-        await _firestore
-            .collection('Cardapios')
-            .doc(cardapioId)
-            .delete();
-      }else throw Exception("Para Excluir deve ser O gerente do estabelecimento");
+      if (cargo == 'Gerente') {
+        await _firestore.collection('Cardapios').doc(cardapioId).delete();
+      } else
+        throw Exception("Para Excluir deve ser O gerente do estabelecimento");
     } catch (e) {
       throw Exception('Erro ao excluir cardápio:');
     }
   }
 
   /// Suspende/reativa (atualiza campo 'ativo')
-  Future<void> suspenderCardapio(String gerenteId, String cardapioId, bool ativo) async {
+  Future<void> suspenderCardapio(
+    String gerenteId,
+    String cardapioId,
+    bool ativo,
+  ) async {
     try {
       if (gerenteId.isEmpty) throw Exception('GerenteId inválido');
 
-      await _firestore
-          .collection('Cardapios')
-          .doc(cardapioId)
-          .update({
-            'ativo': ativo,
-            'atualizadoEm': FieldValue.serverTimestamp(),
-          });
+      await _firestore.collection('Cardapios').doc(cardapioId).update({
+        'ativo': ativo,
+        'atualizadoEm': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
       throw Exception('Erro ao alterar status do cardápio: ${e.toString()}');
     }
   }
-
 }

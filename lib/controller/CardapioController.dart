@@ -6,8 +6,6 @@ import '../models/Cardapio.dart';
 class CardapioController {
   final CardapioFirebase _cardapioFirebase = CardapioFirebase();
 
-
-
   /// Cadastrar cardápio
   Future<String> cadastrarCardapio(Cardapio cardapio) async {
     try {
