@@ -5,6 +5,7 @@ class Cardapio {
   double preco;
   bool ativo;
   String categoria;
+  String? observacao;
 
   Cardapio({
     this.uid = '',

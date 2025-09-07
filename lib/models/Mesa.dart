@@ -3,19 +3,11 @@ class Mesa {
   int numero;
   String nome;
 
-  Mesa({
-    this.uid,
-    required this.numero,
-    this.nome = '',
-  });
+  Mesa({this.uid, required this.numero, this.nome = ''});
 
   // Converte a mesa para Map para salvar no Firebase
   Map<String, dynamic> toMap() {
-    return {
-      'uid': uid,
-      'numero': numero,
-      'nome': nome,
-    };
+    return {'uid': uid, 'numero': numero, 'nome': nome};
   }
 
   // Cria uma Mesa a partir de um Map do Firebase

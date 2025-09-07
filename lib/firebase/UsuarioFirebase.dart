@@ -16,10 +16,7 @@ class UsuarioFirebase {
   /// Criar usuário no Firebase Auth
   Future<String> criarUsuarioAuth(String email, String senha) async {
     UserCredential userCredential = await FirebaseAuth.instance
-        .createUserWithEmailAndPassword(
-      email: email,
-      password: senha,
-    );
+        .createUserWithEmailAndPassword(email: email, password: senha);
     return userCredential.user!.uid;
   }
 
@@ -30,15 +27,10 @@ class UsuarioFirebase {
       options: Firebase.app().options,
     );
 
-    FirebaseAuth authSecundaria = FirebaseAuth.instanceFor(
-      app: appSecundario,
-    );
+    FirebaseAuth authSecundaria = FirebaseAuth.instanceFor(app: appSecundario);
 
     UserCredential funcionarioCredential = await authSecundaria
-        .createUserWithEmailAndPassword(
-      email: email,
-      password: senha,
-    );
+        .createUserWithEmailAndPassword(email: email, password: senha);
 
     String funcionarioId = funcionarioCredential.user!.uid;
 
@@ -58,7 +50,9 @@ class UsuarioFirebase {
       final cargo = userData?['cargo'] as String?;
 
       if (doc.exists && cargo != 'Gerente') {
-        throw Exception('Acesso negado: Apenas gerentes podem cadastrar funcionários');
+        throw Exception(
+          'Acesso negado: Apenas gerentes podem cadastrar funcionários',
+        );
       }
 
       if (doc.exists && cargo == 'Gerente') {
@@ -96,7 +90,7 @@ class UsuarioFirebase {
         return 'Conta Criada com sucesso, acesse a tela de login';
       }
       return 'Conta Criada com sucesso';
-    }catch (e){
+    } catch (e) {
       throw Exception(e);
     }
   }
@@ -108,13 +102,9 @@ class UsuarioFirebase {
 
   /// Verificar se CPF existe nos gerentes
   Future<bool> verificarCpfExistenteGerentes(String cpf) async {
-    final gerentesCpf = await _usuariosRef
-        .where('cpf', isEqualTo: cpf)
-        .get();
+    final gerentesCpf = await _usuariosRef.where('cpf', isEqualTo: cpf).get();
     return gerentesCpf.docs.isNotEmpty;
   }
-
-
 
   /// Listar funcionários ativos
   Stream<QuerySnapshot> listarFuncionariosAtivos(String gerenteId) {
@@ -132,17 +122,15 @@ class UsuarioFirebase {
         .where('gerenteUid', isEqualTo: gerenteId)
         .where('cargo', isNotEqualTo: "Gerente")
         .snapshots();
-
   }
 
   /// Atualizar status do funcionário
-  Future<String> atualizarStatusFuncionario(String funcionarioId, bool status) async {
+  Future<String> atualizarStatusFuncionario(
+    String funcionarioId,
+    bool status,
+  ) async {
     try {
-
-      await _usuariosRef
-          .doc(funcionarioId)
-          .update({'ativo': status});
-
+      await _usuariosRef.doc(funcionarioId).update({'ativo': status});
 
       return "Ativar o usuário ocorreu com êxito";
     } catch (e) {
@@ -151,10 +139,11 @@ class UsuarioFirebase {
   }
 
   /// Atualizar dados do funcionário
-  Future<void> atualizarDadosFuncionario(String gerenteId, Usuario usuario) async {
-    await _usuariosRef
-        .doc(usuario.uid)
-        .update({
+  Future<void> atualizarDadosFuncionario(
+    String gerenteId,
+    Usuario usuario,
+  ) async {
+    await _usuariosRef.doc(usuario.uid).update({
       'nome': usuario.nome,
       'telefone': usuario.telefone,
       'cargo': usuario.cargo,
@@ -163,10 +152,7 @@ class UsuarioFirebase {
     });
   }
 
-  Future<void> apagarFuncionario(String gerenteId,String id) async{
-    await _usuariosRef
-        .doc(id)
-        .delete();
+  Future<void> apagarFuncionario(String gerenteId, String id) async {
+    await _usuariosRef.doc(id).delete();
   }
-
 }

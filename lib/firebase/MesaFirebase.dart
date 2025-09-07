@@ -13,15 +13,15 @@ class MesaFirebase {
 
   /// Adicionar mesa
   Future<String> adicionarMesa(String Id, Mesa mesa) async {
-    final doc = await  FirebaseFirestore.instance
-        .collection('Usuarios').doc(Id).get();
+    final doc = await FirebaseFirestore.instance
+        .collection('Usuarios')
+        .doc(Id)
+        .get();
     final userData = doc.data() as Map<String, dynamic>?;
     final cargo = userData?['cargo'] as String?;
 
     if (cargo == "Gerente") {
-      DocumentReference docRef = await _firestore
-          .collection('Mesas')
-          .add({
+      DocumentReference docRef = await _firestore.collection('Mesas').add({
         'nome': mesa.nome,
         'numero': mesa.numero,
         'gerenteUid': Id,
@@ -32,9 +32,7 @@ class MesaFirebase {
       return docRef.id;
     } else {
       final gerenteUid = userData?['gerenteUid'] as String?;
-      DocumentReference docRef = await _firestore
-          .collection('Mesas')
-          .add({
+      DocumentReference docRef = await _firestore.collection('Mesas').add({
         'nome': mesa.nome,
         'numero': mesa.numero,
         'gerenteUid': gerenteUid,
@@ -44,13 +42,14 @@ class MesaFirebase {
       await docRef.update({'uid': docRef.id});
       return docRef.id;
     }
-
   }
 
   /// Buscar mesas (snapshot único)
   Future<QuerySnapshot> buscarMesas(String gerenteUid) async {
-    final doc = await  FirebaseFirestore.instance
-        .collection('Usuarios').doc(gerenteUid).get();
+    final doc = await FirebaseFirestore.instance
+        .collection('Usuarios')
+        .doc(gerenteUid)
+        .get();
     final userData = doc.data() as Map<String, dynamic>?;
     final Uid = userData?['gerenteUid'] as String?;
     return await _firestore
@@ -63,7 +62,9 @@ class MesaFirebase {
   /// Stream de mesas (tempo real)
   Future<Stream<QuerySnapshot<Object?>>> streamMesas(String gerenteUid) async {
     final doc = await FirebaseFirestore.instance
-        .collection('Usuarios').doc(gerenteUid).get();
+        .collection('Usuarios')
+        .doc(gerenteUid)
+        .get();
     final userData = doc.data() as Map<String, dynamic>?;
     final Uid = userData?['gerenteUid'] as String?;
 
@@ -76,22 +77,16 @@ class MesaFirebase {
 
   /// Deletar mesa
   Future<void> deletarMesa(String gerenteId, String mesaUid) async {
-    await _firestore
-        .collection('Mesas')
-        .doc(mesaUid)
-        .delete();
+    await _firestore.collection('Mesas').doc(mesaUid).delete();
   }
 
   /// Atualizar mesa
   Future<void> atualizarMesa(String gerenteId, Mesa mesa) async {
-    await _firestore
-        .collection('Mesas')
-        .doc(mesa.uid)
-        .update({
-          'nome': mesa.nome,
-          'numero': mesa.numero,
-          'atualizadoEm': FieldValue.serverTimestamp(),
-        });
+    await _firestore.collection('Mesas').doc(mesa.uid).update({
+      'nome': mesa.nome,
+      'numero': mesa.numero,
+      'atualizadoEm': FieldValue.serverTimestamp(),
+    });
   }
 
   /// Converter DocumentSnapshot em Mesa
