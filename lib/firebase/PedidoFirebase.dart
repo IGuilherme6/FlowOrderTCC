@@ -269,4 +269,8 @@ class PedidoFirebase {
     }
   }
 
+  Future<void> editarPedido(String uid, Map<String, dynamic> dadosAtualizados) async {
+    await _pedidosRef.doc(uid).update(dadosAtualizados);
+  }
+
 }
