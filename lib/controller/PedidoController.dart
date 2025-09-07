@@ -81,6 +81,7 @@ class PedidoController {
 
 
   /// Processa o pagamento de um pedido
+  /// Processa o pagamento de um pedido
   Future<bool> processarPagamento({
     required String pedidoUid,
     required String metodoPagamento,
@@ -89,40 +90,27 @@ class PedidoController {
     double? troco,
   }) async {
     try {
-
-      // 1. Validar se o UID não está vazio
       if (pedidoUid.isEmpty) {
-
         throw Exception('UID do pedido é obrigatório');
       }
-
 
       final pedido = await buscarPedidoPorUid(pedidoUid);
 
       if (pedido == null) {
-
-
-
-        final todosPedidos = await _pedidoFirebase.buscarPedidos();
-
-
         throw Exception('Pedido não encontrado');
       }
 
-
-      // 3. Verificar se já foi pago
       if (pedido.pago) {
         throw Exception('Este pedido já foi pago');
       }
 
-      // 4. Validar o pagamento
+      // Calcular total com desconto
       final totalComDesconto = pedido.calcularTotal() - desconto;
-
       if (metodoPagamento == 'Dinheiro' && valorPago < totalComDesconto) {
         throw Exception('Valor pago insuficiente');
       }
 
-      // 5. Registrar o pagamento no Firebase
+      // 1. Registrar pagamento no Firebase
       await _pedidoFirebase.marcarComoPago(
         pedidoUid: pedidoUid,
         metodoPagamento: metodoPagamento,
@@ -131,12 +119,12 @@ class PedidoController {
         troco: troco ?? 0.0,
       );
 
-      // 6. Atualizar o status se necessário
-      if (pedido.statusAtual == 'Aberto') {
-        await _pedidoFirebase.atualizarStatus(pedidoUid, 'Em Preparo');
-      }
+      // 2. Atualizar status para ENTREGUE
+      await _pedidoFirebase.atualizarStatus(pedidoUid, 'Entregue');
+
       return true;
     } catch (e) {
+      print("Erro no processamento de pagamento: $e");
       return false;
     }
   }
@@ -210,6 +198,52 @@ class PedidoController {
     }
   }
 
+  Future<bool> mudarStatusPedido(String pedidoId, String novoStatus) async {
+    try {
+      await _pedidoFirebase.atualizarStatus(pedidoId, novoStatus);
+      return true;
+    } catch (e) {
+      return false;
+    }
+
+  }
+
+  Future<Map<String, dynamic>> gerarRelatorioDoDia() async {
+    final hoje = DateTime.now();
+    final pedidos = await _pedidoFirebase.buscarPedidosDoDia(hoje);
+
+    double totalVendas = 0.0;
+    int qtdPedidos = pedidos.length;
+    Map<String, int> statusCount = {};
+    Map<String, double> pagamentoPorMetodo = {
+      'Dinheiro': 0,
+      'Cartão': 0,
+      'PIX': 0,
+    };
+
+    for (var pedido in pedidos) {
+      totalVendas += pedido.calcularTotal();
+
+      // Contagem por status
+      statusCount[pedido.statusAtual] = (statusCount[pedido.statusAtual] ?? 0) + 1;
+
+      // Agrupamento por pagamento
+      if (pedido.pago) {
+        final detalhe = await _pedidoFirebase.buscarDetalhePagamento(pedido.uid!);
+        if (detalhe != null) {
+          final metodo = detalhe['metodoPagamento'] ?? 'Outro';
+          pagamentoPorMetodo[metodo] = (pagamentoPorMetodo[metodo] ?? 0) + pedido.calcularTotal();
+        }
+      }
+    }
+
+    return {
+      'totalVendas': totalVendas,
+      'qtdPedidos': qtdPedidos,
+      'statusCount': statusCount,
+      'pagamentoPorMetodo': pagamentoPorMetodo,
+    };
+  }
 
 
 }
