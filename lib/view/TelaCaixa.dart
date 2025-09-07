@@ -341,8 +341,87 @@ class _TelaCaixaState extends State<TelaCaixa> {
                     side: BorderSide(color: Cores.borderGray),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  onPressed: () {
-                    // Implementar edição
+                  onPressed: () async {
+                    if (pedido.statusAtual != "Aberto") {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Só é possível editar pedidos em aberto."),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    final atualizado = await showDialog(
+                      context: context,
+                      builder: (_) => EditarPedidoDialog(pedido: pedido),
+                    );
+
+                    if (atualizado == true) {
+                      setState(() {}); // força recarregar a lista
+                    }
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: Icon(Icons.delete, size: 16, color: Colors.red),
+                  label: Text('Excluir', style: TextStyle(color: Colors.red)),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () async {
+                    if (pedido.statusAtual != "Aberto") {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Só é possível excluir pedidos em aberto."),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+
+                    final confirmar = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: Text("Excluir Pedido"),
+                        content: Text(
+                            "Tem certeza que deseja excluir este pedido da mesa ${pedido.mesa.numero}?"),
+                        actions: [
+                          TextButton(
+                            child: Text("Cancelar"),
+                            onPressed: () => Navigator.pop(context, false),
+                          ),
+                          ElevatedButton(
+                            child: Text("Excluir"),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                            onPressed: () => Navigator.pop(context, true),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirmar == true) {
+                      final sucesso = await _pedidoController.excluirPedido(pedido);
+                      if (sucesso) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Pedido excluído com sucesso."),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        setState(() {}); // força atualizar a lista
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Erro ao excluir pedido."),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
                   },
                 ),
               ),
@@ -968,19 +1047,158 @@ class _PagamentoDialogState extends State<PagamentoDialog> {
       );
     }
   }
+}
 
-// Também atualize o método _abrirDialogPagamento para reagir ao resultado:
-  void _abrirDialogPagamento(Pedido pedido) async {
-    final resultado = await showDialog<bool>(
+class EditarPedidoDialog extends StatefulWidget {
+  final Pedido pedido;
+  EditarPedidoDialog({required this.pedido});
+
+  @override
+  State<EditarPedidoDialog> createState() => _EditarPedidoDialogState();
+}
+
+class _EditarPedidoDialogState extends State<EditarPedidoDialog> {
+  final PedidoController _pedidoController = PedidoController();
+  final CardapioController _cardapioController = CardapioController();
+  List<Cardapio> cardapio = [];
+  late Mesa mesaSelecionada;
+  late List<ItemCardapio> itensSelecionados;
+  late TextEditingController obsController;
+  bool carregando = true;
+
+  @override
+  void initState() {
+    super.initState();
+    mesaSelecionada = widget.pedido.mesa;
+    itensSelecionados = List.from(widget.pedido.itens);
+    obsController = TextEditingController(text: widget.pedido.observacao ?? "");
+    _carregarCardapio();
+  }
+
+  Future<void> _carregarCardapio() async {
+    final c = await _cardapioController.buscarCardapios();
+    setState(() {
+      cardapio = c.where((i) => i.ativo).toList();
+      carregando = false;
+    });
+  }
+
+  void _customizarItem(Cardapio item) {
+    showDialog(
       context: context,
-      builder: (context) => PagamentoDialog(pedido: pedido),
+      builder: (_) => CustomizarItemDialog(
+        item: item,
+        onConfirm: (novoItem) {
+          setState(() => itensSelecionados.add(novoItem));
+        },
+      ),
+    );
+  }
+
+  void _removerItem(ItemCardapio item) {
+    setState(() {
+      itensSelecionados.remove(item);
+    });
+  }
+
+  Future<void> _salvar() async {
+    final pedidoEditado = Pedido(
+      uid: widget.pedido.uid,
+      horario: widget.pedido.horario,
+      mesa: mesaSelecionada,
+      itens: itensSelecionados,
+      statusAtual: widget.pedido.statusAtual,
+      observacao: obsController.text,
+      gerenteUid: widget.pedido.gerenteUid, // mantém gerenteUid
     );
 
-    // Se o pagamento foi processado com sucesso, atualizar a lista
-    if (resultado == true) {
-      // Aqui você pode chamar um método para recarregar a lista de pedidos
-      // Por exemplo: _carregarPedidos();
-      setState(() {}); // Força rebuild da tela
-    }
+    final sucesso = await _pedidoController.editarPedido(pedidoEditado);
+    if (sucesso) Navigator.pop(context, true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Cores.cardBlack,
+      title: Text("Editar Pedido", style: TextStyle(color: Cores.textWhite)),
+      content: carregando
+          ? Center(child: CircularProgressIndicator())
+          : SizedBox(
+        width: 700,
+        height: 600,
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                itemCount: cardapio.length,
+                itemBuilder: (_, i) {
+                  final item = cardapio[i];
+                  return Card(
+                    color: Cores.cardBlack,
+                    child: ListTile(
+                      title: Text(item.nome,
+                          style: TextStyle(color: Cores.textWhite)),
+                      subtitle: Text(
+                        "R\$ ${item.preco.toStringAsFixed(2)} - ${item.categoria}",
+                        style: TextStyle(color: Cores.textGray),
+                      ),
+                      trailing: IconButton(
+                        icon: Icon(Icons.add, color: Cores.primaryRed),
+                        onPressed: () => _customizarItem(item),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Divider(color: Cores.borderGray),
+            Text("Itens do Pedido",
+                style: TextStyle(color: Cores.textWhite)),
+            ...itensSelecionados.map(
+                  (i) => Container(
+                margin: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Cores.borderGray.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "${i.quantidade}x ${i.nome} - R\$ ${(i.preco * i.quantidade).toStringAsFixed(2)}",
+                        style: TextStyle(color: Cores.textGray),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _removerItem(i),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            TextField(
+              controller: obsController,
+              decoration: InputDecoration(
+                hintText: "Observação do pedido...",
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+            child: Text("Cancelar",
+                style: TextStyle(color: Cores.textGray)),
+            onPressed: () => Navigator.pop(context)),
+        ElevatedButton(
+          child: Text("Salvar"),
+          onPressed: _salvar,
+          style: ElevatedButton.styleFrom(backgroundColor: Cores.primaryRed),
+        ),
+      ],
+    );
   }
 }

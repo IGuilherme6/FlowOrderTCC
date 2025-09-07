@@ -261,11 +261,32 @@ class PedidoFirebase {
         'periodoFim': dataFim,
       };
     } catch (e) {
-      print('Erro ao buscar relatório de métodos de pagamento: $e');
       return {
         'totalPorMetodo': {'Dinheiro': 0.0, 'Cartão': 0.0, 'PIX': 0.0},
         'quantidadePorMetodo': {'Dinheiro': 0, 'Cartão': 0, 'PIX': 0},
       };
+    }
+  }
+
+  Future<void> editarPedido(String uid, Map<String, dynamic> dadosAtualizados) async {
+    await _pedidosRef.doc(uid).update(dadosAtualizados);
+  }
+
+  Future<List<Pedido>> buscarPedidosDoDia(DateTime dia) async {
+    try {
+      final inicio = DateTime(dia.year, dia.month, dia.day, 0, 0, 0);
+      final fim = DateTime(dia.year, dia.month, dia.day, 23, 59, 59);
+
+      final snapshot = await _pedidosRef
+          .where('horario', isGreaterThanOrEqualTo: Timestamp.fromDate(inicio))
+          .where('horario', isLessThanOrEqualTo: Timestamp.fromDate(fim))
+          .get();
+
+      return snapshot.docs
+          .map((doc) => Pedido.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+    } catch (e) {
+      return [];
     }
   }
 
