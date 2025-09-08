@@ -98,7 +98,7 @@ class _TelaCaixaState extends State<TelaCaixa> {
   // Filtros
   // -------------------------
   Widget _buildFiltros() {
-    final filtros = ['Todos', ...Pedido.statusOpcoes];
+    final filtros = ['Todos', ...Pedido.statusOpcoes.where((s) => s != 'Cancelado')];
     return SizedBox(
       height: 50,
       child: ListView.builder(
@@ -367,7 +367,7 @@ class _TelaCaixaState extends State<TelaCaixa> {
               Expanded(
                 child: OutlinedButton.icon(
                   icon: Icon(Icons.delete, size: 16, color: Colors.red),
-                  label: Text('Excluir', style: TextStyle(color: Colors.red)),
+                  label: Text('Cancelar', style: TextStyle(color: Colors.red)),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.red),
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -376,7 +376,7 @@ class _TelaCaixaState extends State<TelaCaixa> {
                     if (pedido.statusAtual != "Aberto") {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text("Só é possível excluir pedidos em aberto."),
+                          content: Text("Só é possível Cancelar pedidos em aberto. Cumunique a cozinha"),
                           backgroundColor: Colors.red,
                         ),
                       );
@@ -386,9 +386,9 @@ class _TelaCaixaState extends State<TelaCaixa> {
                     final confirmar = await showDialog<bool>(
                       context: context,
                       builder: (_) => AlertDialog(
-                        title: Text("Excluir Pedido"),
+                        title: Text("Cancelar Pedido"),
                         content: Text(
-                            "Tem certeza que deseja excluir este pedido da mesa ${pedido.mesa.numero}?"),
+                            "Tem certeza que deseja Cancelar este pedido da mesa ${pedido.mesa.numero}?"),
                         actions: [
                           TextButton(
                             child: Text("Cancelar"),

@@ -29,10 +29,11 @@ class PedidoFirebase {
     }
   }
 
-  /// Exclui um pedido
+  /// Exclui um pedido/Cancela
   Future<void> excluirPedido(String pedidoId) async {
     try {
-      await _pedidosRef.doc(pedidoId).delete();
+      await _pedidosRef.doc(pedidoId)
+          .update({'statusAtual': 'Cancelado'});
     } catch (e) {
       throw Exception('Erro ao excluir pedido: $e');
     }
@@ -58,6 +59,7 @@ class PedidoFirebase {
         .collection('Pedidos')
         .where('gerenteUid', isEqualTo: gerenteUid)
         .where('pago', isEqualTo: false)
+        .where('statusAtual', whereIn: ['Aberto', 'Em Preparo', 'Pronto', 'Entregue'])
         .orderBy('horario', descending: true)
         .snapshots()
         .map((snap) => snap.docs
@@ -118,35 +120,7 @@ class PedidoFirebase {
       return null;
     }
   }
-
-  /// Estorna um pagamento (marca como não pago)
-  Future<void> estornarPagamento(String pedidoUid) async {
-    try {
-      final batch = _firestore.batch();
-
-      // 1. Atualizar o pedido removendo o status de pago
-      final pedidoRef = _pedidosRef.doc(pedidoUid);
-      batch.update(pedidoRef, {
-        'pago': false,
-        'dataPagamento': FieldValue.delete(),
-      });
-
-      // 2. Adicionar registro de estorno na subcoleção de pagamentos
-      final estornoRef = pedidoRef.collection('pagamentos').doc();
-      batch.set(estornoRef, {
-        'tipo': 'estorno',
-        'dataEstorno': FieldValue.serverTimestamp(),
-        'processadoPor': 'sistema', // Você pode passar o UID do usuário logado
-        'motivo': 'Estorno manual',
-      });
-
-      await batch.commit();
-      print('Estorno processado com sucesso para pedido: $pedidoUid');
-    } catch (e) {
-      print('Erro ao estornar pagamento: $e');
-      throw Exception('Falha ao processar estorno');
-    }
-  }
+  
 
   /// Busca pedidos pagos em um período específico
   Future<List<Pedido>> buscarPedidosPagos({
@@ -187,32 +161,46 @@ class PedidoFirebase {
   /// Busca informações detalhadas de pagamento de um pedido
   Future<Map<String, dynamic>?> buscarDetalhePagamento(String pedidoUid) async {
     try {
-      final pagamentosSnapshot = await _pedidosRef
-          .doc(pedidoUid)
-          .collection('pagamentos')
-          .where('tipo', isNotEqualTo: 'estorno')
-          .orderBy('dataPagamento', descending: true)
-          .limit(1)
-          .get();
+      final pagamentosRef = _pedidosRef.doc(pedidoUid).collection('pagamentos');
 
-      if (pagamentosSnapshot.docs.isEmpty) {
+      // Busca os pagamentos ordenados pela data (do mais recente para o mais antigo)
+      final snapshot = await pagamentosRef.orderBy('dataPagamento', descending: true).get();
+
+      if (snapshot.docs.isEmpty) {
         return null;
       }
 
-      final doc = pagamentosSnapshot.docs.first;
-      final data = doc.data();
+      // Percorre os docs do mais novo para o mais antigo e retorna o primeiro que não é estorno.
+      for (final d in snapshot.docs) {
+        final data = d.data() as Map<String, dynamic>;
 
-      return {
-        'uid': doc.id,
-        'metodoPagamento': data['metodoPagamento'],
-        'valorPago': data['valorPago'],
-        'desconto': data['desconto'] ?? 0.0,
-        'troco': data['troco'] ?? 0.0,
-        'dataPagamento': (data['dataPagamento'] as Timestamp).toDate(),
-        'processadoPor': data['processadoPor'],
-      };
+        // Se o documento tiver campo 'tipo' e for estorno, ignora.
+        if (data.containsKey('tipo') && data['tipo'] == 'estorno') {
+          continue;
+        }
+
+        // Encontrou um pagamento válido — normaliza tipos numéricos
+        final valorPago = (data['valorPago'] as num).toDouble();
+        final desconto = data.containsKey('desconto') ? (data['desconto'] as num).toDouble() : 0.0;
+        final troco = data.containsKey('troco') ? (data['troco'] as num).toDouble() : 0.0;
+        final metodo = data['metodoPagamento'] ?? 'Outro';
+
+        return {
+          'uid': d.id,
+          'metodoPagamento': metodo,
+          'valorPago': valorPago,
+          'desconto': desconto,
+          'troco': troco,
+          'dataPagamento': data['dataPagamento'] is Timestamp ? (data['dataPagamento'] as Timestamp).toDate() : null,
+          'processadoPor': data['processadoPor'],
+          'raw': data,
+        };
+      }
+
+      // Se todos os pagamentos foram estorno (ou nenhum válido)
+      return null;
     } catch (e) {
-      print('Erro ao buscar detalhe do pagamento: $e');
+      print('Erro ao buscar detalhe de pagamento: $e');
       return null;
     }
   }
@@ -289,5 +277,22 @@ class PedidoFirebase {
       return [];
     }
   }
+
+  Future<List<Pedido>> buscarPedidosPorPeriodo(DateTime inicio, DateTime fim) async {
+    try {
+      final snapshot = await _pedidosRef
+          .where('horario', isGreaterThanOrEqualTo: Timestamp.fromDate(inicio))
+          .where('horario', isLessThanOrEqualTo: Timestamp.fromDate(fim))
+          .get();
+
+      return snapshot.docs
+          .map((doc) => Pedido.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+  
+
 
 }
