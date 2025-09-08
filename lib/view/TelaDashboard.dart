@@ -13,6 +13,7 @@ class _TelaDashboardState extends State<TelaDashboard> {
   final PedidoController _pedidoController = PedidoController();
   Map<String, dynamic>? relatorio;
   bool carregando = true;
+  bool semanal = false; // 🔹 filtro atual
 
   @override
   void initState() {
@@ -21,7 +22,8 @@ class _TelaDashboardState extends State<TelaDashboard> {
   }
 
   Future<void> _carregarRelatorio() async {
-    final dados = await _pedidoController.gerarRelatorioDoDia();
+    setState(() => carregando = true);
+    final dados = await _pedidoController.gerarRelatorio(semanal: semanal);
     setState(() {
       relatorio = dados;
       carregando = false;
@@ -38,24 +40,70 @@ class _TelaDashboardState extends State<TelaDashboard> {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: carregando
-                  ? Center(child: CircularProgressIndicator(color: Cores.primaryRed))
-                  : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Dashboard',
-                    style: TextStyle(
-                      color: Cores.textWhite,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                transitionBuilder: (child, animation) {
+                  final offsetAnimation = Tween<Offset>(
+                    begin: const Offset(0, 0.2),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
+
+                  return SlideTransition(
+                    position: offsetAnimation,
+                    child: FadeTransition(opacity: animation, child: child),
+                  );
+                },
+                child: carregando
+                    ? Center(
+                  key: ValueKey("loading"),
+                  child: CircularProgressIndicator(color: Cores.primaryRed),
+                )
+                    : Column(
+                  key: ValueKey(semanal ? "semanal" : "diario"),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Dashboard',
+                          style: TextStyle(
+                            color: Cores.textWhite,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        ToggleButtons(
+                          isSelected: [!semanal, semanal],
+                          onPressed: (index) {
+                            setState(() {
+                              semanal = index == 1;
+                            });
+                            _carregarRelatorio();
+                          },
+                          color: Cores.textGray,
+                          selectedColor: Cores.textWhite,
+                          fillColor: Cores.primaryRed,
+                          borderRadius: BorderRadius.circular(8),
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text("Diário"),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text("Semanal"),
+                            ),
+                          ],
+                        )
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildResumo(),
-                  const SizedBox(height: 24),
-                  Expanded(child: _buildGraficoStatus()),
-                ],
+                    const SizedBox(height: 24),
+                    _buildResumo(),
+                    const SizedBox(height: 24),
+                    _buildGraficos(), // status + métodos de pagamento lado a lado
+                  ],
+                ),
               ),
             ),
           ),
@@ -113,7 +161,7 @@ class _TelaDashboardState extends State<TelaDashboard> {
     if (statusCount.isEmpty) {
       return Center(
         child: Text(
-          "Nenhum pedido registrado hoje",
+          "Nenhum pedido encontrado no período",
           style: TextStyle(color: Cores.textGray, fontSize: 16),
         ),
       );
@@ -130,7 +178,9 @@ class _TelaDashboardState extends State<TelaDashboard> {
         .toList();
 
     return _buildCardGrafico(
-      "Pedidos por Status",
+      semanal
+          ? "Pedidos por Status (${_formatarData(relatorio!['periodoInicio'])} a ${_formatarData(relatorio!['periodoFim'])})"
+          : "Pedidos por Status (Hoje)",
       PieChart(PieChartData(sections: dados)),
     );
   }
@@ -177,4 +227,67 @@ class _TelaDashboardState extends State<TelaDashboard> {
         return Colors.grey;
     }
   }
+
+  Widget _buildGraficos() {
+    return Expanded(
+      child: Row(
+        children: [
+          Expanded(child: _buildGraficoStatus()),
+          const SizedBox(width: 16),
+          Expanded(child: _buildGraficoPagamento()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGraficoPagamento() {
+    final pagamentoPorMetodo =
+    relatorio!['pagamentoPorMetodo'] as Map<String, double>;
+
+    final dados = pagamentoPorMetodo.entries
+        .where((e) => e.value > 0)
+        .map((e) => PieChartSectionData(
+      value: e.value,
+      title: "${e.key}\nR\$ ${e.value.toStringAsFixed(2)}",
+      radius: 70,
+      titleStyle: TextStyle(color: Colors.white, fontSize: 12),
+      color: _corPagamento(e.key),
+    ))
+        .toList();
+
+    if (dados.isEmpty) {
+      return _buildCardGrafico(
+        "Vendas por Método de Pagamento",
+        Center(
+          child: Text(
+            "Nenhum pagamento registrado no período",
+            style: TextStyle(color: Cores.textGray, fontSize: 16),
+          ),
+        ),
+      );
+    }
+
+    return _buildCardGrafico(
+      "Vendas por Método de Pagamento",
+      PieChart(PieChartData(sections: dados)),
+    );
+  }
+
+  Color _corPagamento(String metodo) {
+    switch (metodo) {
+      case "Dinheiro":
+        return Colors.green;
+      case "Cartão":
+        return Colors.blue;
+      case "PIX":
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _formatarData(DateTime data) {
+    return "${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}";
+  }
+
 }

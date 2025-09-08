@@ -245,5 +245,73 @@ class PedidoController {
     };
   }
 
+  Future<Map<String, dynamic>> gerarRelatorio({bool semanal = false}) async {
+    final agora = DateTime.now();
+    DateTime inicio;
+    DateTime fim;
+
+    if (semanal) {
+      // Aqui usamos "últimos 7 dias" (inclui hoje).
+      // Se preferir usar semana calendário (segunda->domingo), substitua esta lógica.
+      final inicioDia = DateTime(agora.year, agora.month, agora.day);
+      inicio = inicioDia.subtract(Duration(days: 6)); // 6 dias atrás + hoje = 7 dias
+      fim = DateTime(agora.year, agora.month, agora.day, 23, 59, 59);
+    } else {
+      // Hoje 00:00:00 → 23:59:59
+      inicio = DateTime(agora.year, agora.month, agora.day, 0, 0, 0);
+      fim = DateTime(agora.year, agora.month, agora.day, 23, 59, 59);
+    }
+
+    // Buscar pedidos no período
+    final pedidos = await _pedidoFirebase.buscarPedidosPorPeriodo(inicio, fim);
+
+    double totalVendas = 0.0;
+    int qtdPedidos = pedidos.length;
+    Map<String, int> statusCount = {};
+    Map<String, double> pagamentoPorMetodo = {
+      "Dinheiro": 0.0,
+      "Cartão": 0.0,
+      "PIX": 0.0,
+      "Outro": 0.0,
+    };
+
+    // Busca detalhes de pagamento em paralelo para todos os pedidos
+    final futures = pedidos.map((p) async {
+      Map<String, dynamic>? detalhe;
+      if (p.uid != null) {
+        detalhe = await _pedidoFirebase.buscarDetalhePagamento(p.uid!);
+      }
+      return {'pedido': p, 'detalhe': detalhe};
+    }).toList();
+
+    final results = await Future.wait(futures);
+
+    for (final r in results) {
+      final Pedido pedido = r['pedido'] as Pedido;
+      final detalhe = r['detalhe'] as Map<String, dynamic>?;
+
+      // Somar total de vendas pelos pagamentos encontrados (se houver)
+      if (detalhe != null) {
+        final valor = (detalhe['valorPago'] as num).toDouble();
+        final metodo = detalhe['metodoPagamento'] as String? ?? 'Outro';
+
+        totalVendas += valor;
+        pagamentoPorMetodo[metodo] = (pagamentoPorMetodo[metodo] ?? 0.0) + valor;
+      }
+
+      // status count (independente de pagamento)
+      statusCount[pedido.statusAtual] = (statusCount[pedido.statusAtual] ?? 0) + 1;
+    }
+
+    return {
+      'totalVendas': totalVendas,
+      'qtdPedidos': qtdPedidos,
+      'statusCount': statusCount,
+      'pagamentoPorMetodo': pagamentoPorMetodo,
+      'periodoInicio': inicio,
+      'periodoFim': fim,
+    };
+  }
+
 
 }
