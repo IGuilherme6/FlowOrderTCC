@@ -391,11 +391,11 @@ class _TelaCaixaState extends State<TelaCaixa> {
                             "Tem certeza que deseja Cancelar este pedido da mesa ${pedido.mesa.numero}?"),
                         actions: [
                           TextButton(
-                            child: Text("Cancelar"),
+                            child: Text("sair"),
                             onPressed: () => Navigator.pop(context, false),
                           ),
                           ElevatedButton(
-                            child: Text("Excluir"),
+                            child: Text("Cancelar Pedido"),
                             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                             onPressed: () => Navigator.pop(context, true),
                           ),
@@ -503,7 +503,8 @@ class AdicionarPedidoDialog extends StatefulWidget {
   State<AdicionarPedidoDialog> createState() => _AdicionarPedidoDialogState();
 }
 
-class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
+class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog>
+    with TickerProviderStateMixin {
   final PedidoController _pedidoController = PedidoController();
   final MesaController _mesaController = MesaController();
   final CardapioController _cardapioController = CardapioController();
@@ -515,10 +516,34 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
   final obsController = TextEditingController();
   bool carregando = true;
 
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
+
     _carregar();
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    obsController.dispose();
+    super.dispose();
   }
 
   Future<void> _carregar() async {
@@ -543,8 +568,27 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
     );
   }
 
+  void _removerItem(int index) {
+    setState(() {
+      itensSelecionados.removeAt(index);
+    });
+  }
+
+  double get _totalPedido {
+    return itensSelecionados.fold(0.0, (sum, item) => sum + item.preco);
+  }
+
   Future<void> _salvar() async {
-    if (mesaSelecionada == null || itensSelecionados.isEmpty) return;
+    if (mesaSelecionada == null || itensSelecionados.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Selecione uma mesa e pelo menos um item'),
+          backgroundColor: Cores.primaryRed,
+        ),
+      );
+      return;
+    }
+
     final pedido = Pedido(
       horario: DateTime.now(),
       mesa: mesaSelecionada!,
@@ -552,85 +596,534 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog> {
       statusAtual: "Aberto",
       observacao: obsController.text,
     );
+
     await _pedidoController.cadastrarPedido(pedido);
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Cores.cardBlack,
-      title: Text("Novo Pedido",
-          style: TextStyle(color: Cores.textWhite, fontSize: 20)),
-      content: carregando
-          ? Center(child: CircularProgressIndicator())
-          : SizedBox(
-        width: 700,
-        height: 600,
-        child: Column(
-          children: [
-            Wrap(
-              spacing: 8,
-              children: mesas.map((m) {
-                final selected = mesaSelecionada?.uid == m.uid;
-                return ChoiceChip(
-                  label: Text("Mesa ${m.numero}"),
-                  selected: selected,
-                  onSelected: (_) =>
-                      setState(() => mesaSelecionada = m),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: cardapio.length,
-                itemBuilder: (_, i) {
-                  final item = cardapio[i];
-                  return Card(
-                    color: Cores.cardBlack,
-                    child: ListTile(
-                      title: Text(item.nome,
-                          style: TextStyle(color: Cores.textWhite)),
-                      subtitle: Text(
-                          "R\$ ${item.preco.toStringAsFixed(2)} - ${item.categoria}",
-                          style: TextStyle(color: Cores.textGray)),
-                      trailing: IconButton(
-                        icon: Icon(Icons.add, color: Cores.primaryRed),
-                        onPressed: () => _customizarItem(item),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            if (itensSelecionados.isNotEmpty) ...[
-              Divider(color: Cores.borderGray),
-              Text("Resumo",
-                  style: TextStyle(color: Cores.textWhite)),
-              ...itensSelecionados.map((i) => Text(
-                  "${i.nome} - R\$ ${i.preco.toStringAsFixed(2)}",
-                  style: TextStyle(color: Cores.textGray))),
-              TextField(
-                controller: obsController,
-                decoration: InputDecoration(
-                  hintText: "Observação do pedido...",
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: Container(
+            width: 800,
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: BoxDecoration(
+              color: Cores.cardBlack,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
                 ),
-              )
-            ]
-          ],
+              ],
+            ),
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  padding: EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Cores.primaryRed, Cores.primaryRed.withOpacity(0.8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.restaurant_menu,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Novo Pedido",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              "Selecione a mesa e adicione os itens",
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.close, color: Colors.white),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Content
+                Expanded(
+                  child: carregando
+                      ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Cores.primaryRed),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          "Carregando...",
+                          style: TextStyle(color: Cores.textGray),
+                        ),
+                      ],
+                    ),
+                  )
+                      : Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left Panel - Menu
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Mesa Selection
+                              Text(
+                                "Selecione a Mesa",
+                                style: TextStyle(
+                                  color: Cores.textWhite,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(height: 12),
+                              Container(
+                                height: 60,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: mesas.length,
+                                  itemBuilder: (context, index) {
+                                    final mesa = mesas[index];
+                                    final selected = mesaSelecionada?.uid == mesa.uid;
+                                    return Container(
+                                      margin: EdgeInsets.only(right: 8),
+                                      child: GestureDetector(
+                                        onTap: () => setState(() => mesaSelecionada = mesa),
+                                        child: AnimatedContainer(
+                                          duration: Duration(milliseconds: 200),
+                                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                          decoration: BoxDecoration(
+                                            color: selected ? Cores.primaryRed : Cores.cardBlack,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: selected ? Cores.primaryRed : Cores.borderGray,
+                                              width: 2,
+                                            ),
+                                            boxShadow: selected ? [
+                                              BoxShadow(
+                                                color: Cores.primaryRed.withOpacity(0.3),
+                                                blurRadius: 8,
+                                                offset: Offset(0, 4),
+                                              ),
+                                            ] : [],
+                                          ),
+                                          child: Text(
+                                            "Mesa ${mesa.numero}",
+                                            style: TextStyle(
+                                              color: selected ? Colors.white : Cores.textWhite,
+                                              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+
+                              SizedBox(height: 24),
+
+                              // Cardápio
+                              Text(
+                                "Cardápio",
+                                style: TextStyle(
+                                  color: Cores.textWhite,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(height: 12),
+
+                              Expanded(
+                                child: ListView.builder(
+                                  itemCount: cardapio.length,
+                                  itemBuilder: (context, index) {
+                                    final item = cardapio[index];
+                                    return Container(
+                                      margin: EdgeInsets.only(bottom: 8),
+                                      child: Card(
+                                        color: Cores.cardBlack,
+                                        elevation: 4,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          side: BorderSide(color: Cores.borderGray.withOpacity(0.3)),
+                                        ),
+                                        child: Padding(
+                                          padding: EdgeInsets.all(16),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 50,
+                                                height: 50,
+                                                decoration: BoxDecoration(
+                                                  color: Cores.primaryRed.withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Icon(
+                                                  Icons.restaurant,
+                                                  color: Cores.primaryRed,
+                                                ),
+                                              ),
+                                              SizedBox(width: 16),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      item.nome,
+                                                      style: TextStyle(
+                                                        color: Cores.textWhite,
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    SizedBox(height: 4),
+                                                    Row(
+                                                      children: [
+                                                        Container(
+                                                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                          decoration: BoxDecoration(
+                                                            color: Cores.primaryRed.withOpacity(0.2),
+                                                            borderRadius: BorderRadius.circular(4),
+                                                          ),
+                                                          child: Text(
+                                                            item.categoria,
+                                                            style: TextStyle(
+                                                              color: Cores.primaryRed,
+                                                              fontSize: 12,
+                                                              fontWeight: FontWeight.w500,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        SizedBox(width: 8),
+                                                        Text(
+                                                          "R\$ ${item.preco.toStringAsFixed(2)}",
+                                                          style: TextStyle(
+                                                            color: Cores.textGray,
+                                                            fontSize: 14,
+                                                            fontWeight: FontWeight.w500,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color: Cores.primaryRed,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: IconButton(
+                                                  icon: Icon(Icons.add, color: Colors.white),
+                                                  onPressed: () => _customizarItem(item),
+                                                  style: IconButton.styleFrom(
+                                                    padding: EdgeInsets.all(8),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(width: 24),
+
+                        // Right Panel - Resumo
+                        Expanded(
+                          flex: 2,
+                          child: Container(
+                            padding: EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Cores.cardBlack.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Cores.borderGray.withOpacity(0.3)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.receipt_long, color: Cores.primaryRed),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "Resumo do Pedido",
+                                      style: TextStyle(
+                                        color: Cores.textWhite,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 16),
+
+                                if (itensSelecionados.isEmpty)
+                                  Container(
+                                    padding: EdgeInsets.all(20),
+                                    decoration: BoxDecoration(
+                                      color: Cores.borderGray.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Icon(
+                                          Icons.shopping_cart_outlined,
+                                          color: Cores.textGray,
+                                          size: 48,
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          "Nenhum item selecionado",
+                                          style: TextStyle(
+                                            color: Cores.textGray,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                else
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        Expanded(
+                                          child: ListView.builder(
+                                            itemCount: itensSelecionados.length,
+                                            itemBuilder: (context, index) {
+                                              final item = itensSelecionados[index];
+                                              return Container(
+                                                margin: EdgeInsets.only(bottom: 8),
+                                                padding: EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  color: Cores.cardBlack,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  border: Border.all(color: Cores.borderGray.withOpacity(0.3)),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(
+                                                            item.nome,
+                                                            style: TextStyle(
+                                                              color: Cores.textWhite,
+                                                              fontSize: 14,
+                                                              fontWeight: FontWeight.w500,
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            "R\$ ${item.preco.toStringAsFixed(2)}",
+                                                            style: TextStyle(
+                                                              color: Cores.primaryRed,
+                                                              fontSize: 12,
+                                                              fontWeight: FontWeight.w600,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    IconButton(
+                                                      icon: Icon(Icons.remove_circle_outline, color: Cores.primaryRed),
+                                                      onPressed: () => _removerItem(index),
+                                                      style: IconButton.styleFrom(
+                                                        padding: EdgeInsets.all(4),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+
+                                        Container(
+                                          padding: EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: Cores.primaryRed.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: Cores.primaryRed.withOpacity(0.3)),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                "Total:",
+                                                style: TextStyle(
+                                                  color: Cores.textWhite,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              Text(
+                                                "R\$ ${_totalPedido.toStringAsFixed(2)}",
+                                                style: TextStyle(
+                                                  color: Cores.primaryRed,
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                SizedBox(height: 16),
+
+                                // Observação
+                                TextField(
+                                  controller: obsController,
+                                  maxLines: 3,
+                                  style: TextStyle(color: Cores.textWhite),
+                                  decoration: InputDecoration(
+                                    hintText: "Observação do pedido...",
+                                    hintStyle: TextStyle(color: Cores.textGray),
+                                    filled: true,
+                                    fillColor: Cores.cardBlack,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: Cores.borderGray),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: Cores.borderGray),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: Cores.primaryRed),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Footer
+                Container(
+                  padding: EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Cores.cardBlack.withOpacity(0.5),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
+                    ),
+                    border: Border(
+                      top: BorderSide(color: Cores.borderGray.withOpacity(0.3)),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        child: Text(
+                          "Cancelar",
+                          style: TextStyle(
+                            color: Cores.textGray,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: _salvar,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Cores.primaryRed,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 4,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.save),
+                            SizedBox(width: 8),
+                            Text(
+                              "Salvar Pedido",
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-            child: Text("Cancelar", style: TextStyle(color: Cores.textGray)),
-            onPressed: () => Navigator.pop(context)),
-        ElevatedButton(
-            child: Text("Salvar"),
-            onPressed: _salvar,
-            style: ElevatedButton.styleFrom(
-                backgroundColor: Cores.primaryRed)),
-      ],
     );
   }
 }
@@ -647,89 +1140,449 @@ class CustomizarItemDialog extends StatefulWidget {
   State<CustomizarItemDialog> createState() => _CustomizarItemDialogState();
 }
 
-class _CustomizarItemDialogState extends State<CustomizarItemDialog> {
+class _CustomizarItemDialogState extends State<CustomizarItemDialog>
+    with TickerProviderStateMixin {
   final observacaoController = TextEditingController();
   final precoController = TextEditingController();
   int quantidade = 1;
   bool usarPrecoCustomizado = false;
 
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+
   @override
   void initState() {
     super.initState();
     precoController.text = widget.item.preco.toStringAsFixed(2);
+
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    observacaoController.dispose();
+    precoController.dispose();
+    super.dispose();
+  }
+
+  double get _precoTotal {
+    final precoUnitario = usarPrecoCustomizado
+        ? (double.tryParse(precoController.text) ?? widget.item.preco)
+        : widget.item.preco;
+    return precoUnitario * quantidade;
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Cores.cardBlack,
-      title: Text("Customizar item",
-          style: TextStyle(color: Cores.textWhite)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: observacaoController,
-            decoration: InputDecoration(
-                hintText: "Observações (ex: sem cebola, extra queijo...)",
-                hintStyle: TextStyle(color: Cores.textGray)),
-          ),
-          Row(
-            children: [
-              Checkbox(
-                  value: usarPrecoCustomizado,
-                  onChanged: (v) =>
-                      setState(() => usarPrecoCustomizado = v!)),
-              Text("Usar preço customizado",
-                  style: TextStyle(color: Cores.textWhite)),
-            ],
-          ),
-          if (usarPrecoCustomizado)
-            TextField(
-              controller: precoController,
-              keyboardType:
-              const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: "Preço"),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: Container(
+            width: 500,
+            padding: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Cores.cardBlack,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
+                ),
+              ],
             ),
-          Row(
-            children: [
-              IconButton(
-                  icon: Icon(Icons.remove),
-                  onPressed: () =>
-                      setState(() => quantidade = quantidade > 1 ? quantidade - 1 : 1)),
-              Text("$quantidade",
-                  style: TextStyle(color: Cores.textWhite)),
-              IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: () => setState(() => quantidade++)),
-            ],
-          )
-        ],
-      ),
-      actions: [
-        TextButton(
-            child: Text("Cancelar"),
-            onPressed: () => Navigator.pop(context)),
-        ElevatedButton(
-          child: Text("Adicionar"),
-          onPressed: () {
-            final preco = usarPrecoCustomizado
-                ? double.tryParse(precoController.text) ??
-                widget.item.preco
-                : widget.item.preco;
-            final novoItem = ItemCardapio(
-              uid: widget.item.uid,
-              nome: widget.item.nome,
-              preco: preco,
-              categoria: widget.item.categoria,
-              observacao: observacaoController.text,
-              quantidade: quantidade,
-            );
-            widget.onConfirm(novoItem);
-            Navigator.pop(context);
-          },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Cores.primaryRed.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.edit_note,
+                        color: Cores.primaryRed,
+                        size: 24,
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Customizar Item",
+                            style: TextStyle(
+                              color: Cores.textWhite,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            widget.item.nome,
+                            style: TextStyle(
+                              color: Cores.textGray,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.close, color: Cores.textGray),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Cores.borderGray.withOpacity(0.2),
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 24),
+
+                // Item Info Card
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Cores.borderGray.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Cores.borderGray.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Cores.primaryRed.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.restaurant,
+                          color: Cores.primaryRed,
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.item.nome,
+                              style: TextStyle(
+                                color: Cores.textWhite,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              widget.item.categoria,
+                              style: TextStyle(
+                                color: Cores.textGray,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        "R\$ ${widget.item.preco.toStringAsFixed(2)}",
+                        style: TextStyle(
+                          color: Cores.primaryRed,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 20),
+
+                // Quantidade
+                Text(
+                  "Quantidade",
+                  style: TextStyle(
+                    color: Cores.textWhite,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Container(
+                  padding: EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Cores.cardBlack,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Cores.borderGray),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: quantidade > 1 ? Cores.primaryRed : Cores.borderGray,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: IconButton(
+                          icon: Icon(Icons.remove, color: Colors.white),
+                          onPressed: quantidade > 1
+                              ? () => setState(() => quantidade--)
+                              : null,
+                          style: IconButton.styleFrom(
+                            padding: EdgeInsets.all(8),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: 60,
+                        child: Text(
+                          "$quantidade",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Cores.textWhite,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Cores.primaryRed,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: IconButton(
+                          icon: Icon(Icons.add, color: Colors.white),
+                          onPressed: () => setState(() => quantidade++),
+                          style: IconButton.styleFrom(
+                            padding: EdgeInsets.all(8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 20),
+
+                // Preço Customizado
+                Row(
+                  children: [
+                    Transform.scale(
+                      scale: 1.2,
+                      child: Checkbox(
+                        value: usarPrecoCustomizado,
+                        onChanged: (v) => setState(() => usarPrecoCustomizado = v!),
+                        activeColor: Cores.primaryRed,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      "Usar preço customizado",
+                      style: TextStyle(
+                        color: Cores.textWhite,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+
+                if (usarPrecoCustomizado) ...[
+                  SizedBox(height: 12),
+                  TextField(
+                    controller: precoController,
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    style: TextStyle(color: Cores.textWhite),
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      labelText: "Preço customizado (R\$)",
+                      labelStyle: TextStyle(color: Cores.textGray),
+                      prefixIcon: Icon(Icons.attach_money, color: Cores.primaryRed),
+                      filled: true,
+                      fillColor: Cores.cardBlack,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Cores.borderGray),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Cores.borderGray),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Cores.primaryRed, width: 2),
+                      ),
+                    ),
+                  ),
+                ],
+
+                SizedBox(height: 20),
+
+                // Observações
+                Text(
+                  "Observações",
+                  style: TextStyle(
+                    color: Cores.textWhite,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 8),
+                TextField(
+                  controller: observacaoController,
+                  maxLines: 3,
+                  style: TextStyle(color: Cores.textWhite),
+                  decoration: InputDecoration(
+                    hintText: "Ex: sem cebola, extra queijo, ponto da carne...",
+                    hintStyle: TextStyle(color: Cores.textGray),
+                    prefixIcon: Icon(Icons.note_add, color: Cores.primaryRed),
+                    filled: true,
+                    fillColor: Cores.cardBlack,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Cores.borderGray),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Cores.borderGray),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Cores.primaryRed, width: 2),
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: 24),
+
+                // Total
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Cores.primaryRed.withOpacity(0.1),
+                        Cores.primaryRed.withOpacity(0.05),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Cores.primaryRed.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Total do item:",
+                        style: TextStyle(
+                          color: Cores.textWhite,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        "R\$ ${_precoTotal.toStringAsFixed(2)}",
+                        style: TextStyle(
+                          color: Cores.primaryRed,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 24),
+
+                // Actions
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: Text(
+                        "Cancelar",
+                        style: TextStyle(
+                          color: Cores.textGray,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        final preco = usarPrecoCustomizado
+                            ? double.tryParse(precoController.text) ?? widget.item.preco
+                            : widget.item.preco;
+                        final novoItem = ItemCardapio(
+                          uid: widget.item.uid,
+                          nome: widget.item.nome,
+                          preco: preco,
+                          categoria: widget.item.categoria,
+                          observacao: observacaoController.text,
+                          quantidade: quantidade,
+                        );
+                        widget.onConfirm(novoItem);
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Cores.primaryRed,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 4,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_shopping_cart),
+                          SizedBox(width: 8),
+                          Text(
+                            "Adicionar",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -743,7 +1596,8 @@ class PagamentoDialog extends StatefulWidget {
   State<PagamentoDialog> createState() => _PagamentoDialogState();
 }
 
-class _PagamentoDialogState extends State<PagamentoDialog> {
+class _PagamentoDialogState extends State<PagamentoDialog>
+    with TickerProviderStateMixin {
   String metodoPagamento = 'Dinheiro';
   final valorPagoController = TextEditingController();
   final descontoController = TextEditingController();
@@ -754,211 +1608,482 @@ class _PagamentoDialogState extends State<PagamentoDialog> {
   double get totalComDesconto => totalOriginal - desconto;
   double get troco => (double.tryParse(valorPagoController.text) ?? 0) - totalComDesconto;
 
+  late AnimationController _animationController;
+  late Animation<double> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+
   @override
   void initState() {
     super.initState();
     totalOriginal = widget.pedido.calcularTotal();
     valorPagoController.text = totalOriginal.toStringAsFixed(2);
 
-    // Listener para calcular desconto
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _slideAnimation = Tween<double>(begin: -50, end: 0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+
     descontoController.addListener(() {
       setState(() {
         desconto = double.tryParse(descontoController.text) ?? 0.0;
       });
     });
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    valorPagoController.dispose();
+    descontoController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Cores.cardBlack,
-      title: Row(
-        children: [
-          Icon(Icons.payment, color: Cores.primaryRed),
-          const SizedBox(width: 8),
-          Text(
-            'Pagamento - Mesa ${widget.pedido.mesa.numero}',
-            style: TextStyle(color: Cores.textWhite, fontSize: 18),
-          ),
-        ],
-      ),
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Resumo do pedido
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Cores.borderGray,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Total original:',
-                          style: TextStyle(color: Cores.textGray)),
-                      Text('R\$ ${totalOriginal.toStringAsFixed(2)}',
-                          style: TextStyle(color: Cores.textWhite)),
-                    ],
-                  ),
-                  if (desconto > 0) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Desconto:',
-                            style: TextStyle(color: Cores.textGray)),
-                        Text('- R\$ ${desconto.toStringAsFixed(2)}',
-                            style: TextStyle(color: Cores.primaryRed)),
-                      ],
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: AnimatedBuilder(
+          animation: _slideAnimation,
+          builder: (context, child) {
+            return Transform.translate(
+              offset: Offset(0, _slideAnimation.value),
+              child: Container(
+                width: 500,
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+                decoration: BoxDecoration(
+                  color: Cores.cardBlack,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: Offset(0, 10),
                     ),
                   ],
-                  const Divider(color: Cores.borderGray),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Total a pagar:',
-                          style: TextStyle(
-                              color: Cores.textWhite,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
-                      Text('R\$ ${totalComDesconto.toStringAsFixed(2)}',
-                          style: TextStyle(
-                              color: Cores.primaryRed,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Header
+                    Container(
+                      padding: EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.green, Colors.green.withOpacity(0.8)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.payment,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Pagamento',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  'Mesa ${widget.pedido.mesa.numero}',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: Icon(Icons.close, color: Colors.white),
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Content
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Resumo do pedido
+                            Container(
+                              padding: EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Cores.borderGray.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Cores.borderGray.withOpacity(0.3)),
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.receipt, color: Colors.green),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Resumo do Pedido',
+                                        style: TextStyle(
+                                          color: Cores.textWhite,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text('Total original:', style: TextStyle(color: Cores.textGray)),
+                                      Text('R\$ ${totalOriginal.toStringAsFixed(2)}',
+                                          style: TextStyle(color: Cores.textWhite)),
+                                    ],
+                                  ),
+                                  if (desconto > 0) ...[
+                                    SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text('Desconto:', style: TextStyle(color: Cores.textGray)),
+                                        Text('- R\$ ${desconto.toStringAsFixed(2)}',
+                                            style: TextStyle(color: Cores.primaryRed)),
+                                      ],
+                                    ),
+                                  ],
+                                  Divider(color: Cores.borderGray, height: 24),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text('Total a pagar:',
+                                          style: TextStyle(
+                                              color: Cores.textWhite,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold)),
+                                      Text('R\$ ${totalComDesconto.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                              color: Colors.green,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            SizedBox(height: 24),
+
+                            // Método de pagamento
+                            Text('Método de pagamento:',
+                                style: TextStyle(
+                                    color: Cores.textWhite,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600)),
+                            SizedBox(height: 12),
+                            Row(
+                              children: ['Dinheiro', 'Cartão', 'PIX'].map((metodo) {
+                                final selected = metodoPagamento == metodo;
+                                IconData icon;
+                                switch (metodo) {
+                                  case 'Dinheiro':
+                                    icon = Icons.attach_money;
+                                    break;
+                                  case 'Cartão':
+                                    icon = Icons.credit_card;
+                                    break;
+                                  case 'PIX':
+                                    icon = Icons.qr_code;
+                                    break;
+                                  default:
+                                    icon = Icons.payment;
+                                }
+                                return Expanded(
+                                  child: Container(
+                                    margin: EdgeInsets.only(right: metodo != 'PIX' ? 8 : 0),
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          metodoPagamento = metodo;
+                                          if (metodo != 'Dinheiro') {
+                                            valorPagoController.text = totalComDesconto.toStringAsFixed(2);
+                                          }
+                                        });
+                                      },
+                                      child: AnimatedContainer(
+                                        duration: Duration(milliseconds: 200),
+                                        padding: EdgeInsets.symmetric(vertical: 16),
+                                        decoration: BoxDecoration(
+                                          color: selected ? Colors.green : Cores.cardBlack,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: selected ? Colors.green : Cores.borderGray,
+                                            width: 2,
+                                          ),
+                                          boxShadow: selected ? [
+                                            BoxShadow(
+                                              color: Colors.green.withOpacity(0.3),
+                                              blurRadius: 8,
+                                              offset: Offset(0, 4),
+                                            ),
+                                          ] : [],
+                                        ),
+                                        child: Column(
+                                          children: [
+                                            Icon(
+                                              icon,
+                                              color: selected ? Colors.white : Cores.textGray,
+                                              size: 24,
+                                            ),
+                                            SizedBox(height: 8),
+                                            Text(
+                                              metodo,
+                                              style: TextStyle(
+                                                color: selected ? Colors.white : Cores.textWhite,
+                                                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+
+                            SizedBox(height: 24),
+
+                            // Desconto
+                            Row(
+                              children: [
+                                Transform.scale(
+                                  scale: 1.2,
+                                  child: Checkbox(
+                                    value: aplicandoDesconto,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        aplicandoDesconto = value!;
+                                        if (!aplicandoDesconto) {
+                                          descontoController.clear();
+                                          desconto = 0.0;
+                                        }
+                                      });
+                                    },
+                                    activeColor: Cores.primaryRed,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Aplicar desconto',
+                                  style: TextStyle(
+                                    color: Cores.textWhite,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            if (aplicandoDesconto) ...[
+                              SizedBox(height: 12),
+                              TextField(
+                                controller: descontoController,
+                                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                style: TextStyle(color: Cores.textWhite),
+                                decoration: InputDecoration(
+                                  labelText: 'Valor do desconto (R\$)',
+                                  labelStyle: TextStyle(color: Cores.textGray),
+                                  prefixIcon: Icon(Icons.local_offer, color: Cores.primaryRed),
+                                  filled: true,
+                                  fillColor: Cores.cardBlack,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Cores.borderGray),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Cores.borderGray),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Cores.primaryRed, width: 2),
+                                  ),
+                                ),
+                              ),
+                            ],
+
+                            // Valor pago (só para dinheiro)
+                            if (metodoPagamento == 'Dinheiro') ...[
+                              SizedBox(height: 16),
+                              TextField(
+                                controller: valorPagoController,
+                                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                                style: TextStyle(color: Cores.textWhite),
+                                decoration: InputDecoration(
+                                  labelText: 'Valor recebido (R\$)',
+                                  labelStyle: TextStyle(color: Cores.textGray),
+                                  prefixIcon: Icon(Icons.attach_money, color: Colors.green),
+                                  filled: true,
+                                  fillColor: Cores.cardBlack,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Cores.borderGray),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Cores.borderGray),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Colors.green, width: 2),
+                                  ),
+                                ),
+                              ),
+                              if (troco > 0) ...[
+                                SizedBox(height: 12),
+                                Container(
+                                  padding: EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.green.withOpacity(0.1),
+                                        Colors.green.withOpacity(0.05),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(Icons.monetization_on, color: Colors.green),
+                                          SizedBox(width: 8),
+                                          Text('Troco:', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+                                        ],
+                                      ),
+                                      Text('R\$ ${troco.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                              color: Colors.green,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Footer
+                    Container(
+                      padding: EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Cores.cardBlack.withOpacity(0.5),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(20),
+                          bottomRight: Radius.circular(20),
+                        ),
+                        border: Border(
+                          top: BorderSide(color: Cores.borderGray.withOpacity(0.3)),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
+                            child: Text(
+                              'Cancelar',
+                              style: TextStyle(
+                                color: Cores.textGray,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 16),
+                          ElevatedButton(
+                            onPressed: _confirmarPagamento,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              elevation: 4,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.check_circle),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Confirmar Pagamento',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Método de pagamento
-            Text('Método de pagamento:',
-                style: TextStyle(color: Cores.textWhite, fontSize: 16)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: ['Dinheiro', 'Cartão', 'PIX'].map((metodo) {
-                final selected = metodoPagamento == metodo;
-                return ChoiceChip(
-                  label: Text(metodo),
-                  selected: selected,
-                  selectedColor: Cores.primaryRed,
-                  onSelected: (value) {
-                    setState(() {
-                      metodoPagamento = metodo;
-                      if (metodo != 'Dinheiro') {
-                        valorPagoController.text = totalComDesconto.toStringAsFixed(2);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Desconto
-            Row(
-              children: [
-                Checkbox(
-                  value: aplicandoDesconto,
-                  onChanged: (value) {
-                    setState(() {
-                      aplicandoDesconto = value!;
-                      if (!aplicandoDesconto) {
-                        descontoController.clear();
-                        desconto = 0.0;
-                      }
-                    });
-                  },
-                ),
-                Text('Aplicar desconto',
-                    style: TextStyle(color: Cores.textWhite)),
-              ],
-            ),
-
-            if (aplicandoDesconto) ...[
-              TextField(
-                controller: descontoController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                style: TextStyle(color: Cores.textWhite),
-                decoration: InputDecoration(
-                  labelText: 'Valor do desconto (R\$)',
-                  labelStyle: TextStyle(color: Cores.textGray),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Cores.borderGray),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Cores.primaryRed),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Valor pago (só para dinheiro)
-            if (metodoPagamento == 'Dinheiro') ...[
-              TextField(
-                controller: valorPagoController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                style: TextStyle(color: Cores.textWhite),
-                decoration: InputDecoration(
-                  labelText: 'Valor pago (R\$)',
-                  labelStyle: TextStyle(color: Cores.textGray),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Cores.borderGray),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Cores.primaryRed),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              if (troco > 0)
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.green.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Troco:', style: TextStyle(color: Colors.green)),
-                      Text('R\$ ${troco.toStringAsFixed(2)}',
-                          style: TextStyle(
-                              color: Colors.green, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-            ],
-          ],
+            );
+          },
         ),
       ),
-      actions: [
-        TextButton(
-          child: Text('Cancelar', style: TextStyle(color: Cores.textGray)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Cores.primaryRed,
-          ),
-          child: Text('Confirmar Pagamento',
-              style: TextStyle(color: Cores.textWhite)),
-          onPressed: _confirmarPagamento,
-        ),
-      ],
     );
   }
 
@@ -969,8 +2094,16 @@ class _PagamentoDialogState extends State<PagamentoDialog> {
       if (valorPago < totalComDesconto) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Valor pago insuficiente!'),
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Valor pago insuficiente!'),
+              ],
+            ),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         );
         return;
@@ -981,22 +2114,29 @@ class _PagamentoDialogState extends State<PagamentoDialog> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Cores.cardBlack,
-        content: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(color: Cores.primaryRed),
-            const SizedBox(width: 16),
-            Text('Processando pagamento...',
-                style: TextStyle(color: Cores.textWhite)),
-          ],
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Cores.cardBlack,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: Colors.green),
+              SizedBox(height: 16),
+              Text('Processando pagamento...',
+                  style: TextStyle(color: Cores.textWhite)),
+            ],
+          ),
         ),
       ),
     );
 
     try {
-      final pedidoController = PedidoController(); // Instanciar o controller
+      final pedidoController = PedidoController();
       final valorPago = double.tryParse(valorPagoController.text) ?? totalComDesconto;
 
       final sucesso = await pedidoController.processarPagamento(
@@ -1007,8 +2147,7 @@ class _PagamentoDialogState extends State<PagamentoDialog> {
         troco: metodoPagamento == 'Dinheiro' ? troco : null,
       );
 
-      // Fechar loading
-      Navigator.pop(context);
+      Navigator.pop(context); // Fechar loading
 
       if (sucesso) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1016,33 +2155,49 @@ class _PagamentoDialogState extends State<PagamentoDialog> {
             content: Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text('Pagamento processado com sucesso!'),
               ],
             ),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            duration: Duration(seconds: 3),
           ),
         );
 
-        // Fechar o diálogo e atualizar a lista de pedidos
-        Navigator.pop(context, true); // Retorna true para indicar que houve pagamento
+        Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao processar pagamento. Tente novamente.'),
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Erro ao processar pagamento. Tente novamente.'),
+              ],
+            ),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         );
       }
     } catch (e) {
-      // Fechar loading se ainda estiver aberto
-      Navigator.pop(context);
+      Navigator.pop(context); // Fechar loading
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erro: ${e.toString()}'),
+          content: Row(
+            children: [
+              Icon(Icons.error, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(child: Text('Erro: ${e.toString()}')),
+            ],
+          ),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
     }
@@ -1057,7 +2212,8 @@ class EditarPedidoDialog extends StatefulWidget {
   State<EditarPedidoDialog> createState() => _EditarPedidoDialogState();
 }
 
-class _EditarPedidoDialogState extends State<EditarPedidoDialog> {
+class _EditarPedidoDialogState extends State<EditarPedidoDialog>
+    with TickerProviderStateMixin {
   final PedidoController _pedidoController = PedidoController();
   final CardapioController _cardapioController = CardapioController();
   List<Cardapio> cardapio = [];
@@ -1066,13 +2222,38 @@ class _EditarPedidoDialogState extends State<EditarPedidoDialog> {
   late TextEditingController obsController;
   bool carregando = true;
 
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   @override
   void initState() {
     super.initState();
     mesaSelecionada = widget.pedido.mesa;
     itensSelecionados = List.from(widget.pedido.itens);
     obsController = TextEditingController(text: widget.pedido.observacao ?? "");
+
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
+
     _carregarCardapio();
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    obsController.dispose();
+    super.dispose();
   }
 
   Future<void> _carregarCardapio() async {
@@ -1101,7 +2282,21 @@ class _EditarPedidoDialogState extends State<EditarPedidoDialog> {
     });
   }
 
+  double get _totalPedido {
+    return itensSelecionados.fold(0.0, (sum, item) => sum + (item.preco * item.quantidade));
+  }
+
   Future<void> _salvar() async {
+    if (itensSelecionados.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('O pedido deve ter pelo menos um item'),
+          backgroundColor: Cores.primaryRed,
+        ),
+      );
+      return;
+    }
+
     final pedidoEditado = Pedido(
       uid: widget.pedido.uid,
       horario: widget.pedido.horario,
@@ -1109,7 +2304,7 @@ class _EditarPedidoDialogState extends State<EditarPedidoDialog> {
       itens: itensSelecionados,
       statusAtual: widget.pedido.statusAtual,
       observacao: obsController.text,
-      gerenteUid: widget.pedido.gerenteUid, // mantém gerenteUid
+      gerenteUid: widget.pedido.gerenteUid,
     );
 
     final sucesso = await _pedidoController.editarPedido(pedidoEditado);
@@ -1118,87 +2313,492 @@ class _EditarPedidoDialogState extends State<EditarPedidoDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Cores.cardBlack,
-      title: Text("Editar Pedido", style: TextStyle(color: Cores.textWhite)),
-      content: carregando
-          ? Center(child: CircularProgressIndicator())
-          : SizedBox(
-        width: 700,
-        height: 600,
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                itemCount: cardapio.length,
-                itemBuilder: (_, i) {
-                  final item = cardapio[i];
-                  return Card(
-                    color: Cores.cardBlack,
-                    child: ListTile(
-                      title: Text(item.nome,
-                          style: TextStyle(color: Cores.textWhite)),
-                      subtitle: Text(
-                        "R\$ ${item.preco.toStringAsFixed(2)} - ${item.categoria}",
-                        style: TextStyle(color: Cores.textGray),
-                      ),
-                      trailing: IconButton(
-                        icon: Icon(Icons.add, color: Cores.primaryRed),
-                        onPressed: () => _customizarItem(item),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            Divider(color: Cores.borderGray),
-            Text("Itens do Pedido",
-                style: TextStyle(color: Cores.textWhite)),
-            ...itensSelecionados.map(
-                  (i) => Container(
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Cores.borderGray.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: Container(
+            width: 900,
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: BoxDecoration(
+              color: Cores.cardBlack,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        "${i.quantidade}x ${i.nome} - R\$ ${(i.preco * i.quantidade).toStringAsFixed(2)}",
-                        style: TextStyle(color: Cores.textGray),
+              ],
+            ),
+            child: Column(
+              children: [
+                // Header
+                Container(
+                  padding: EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.orange, Colors.orange.withOpacity(0.8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.edit_note,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _removerItem(i),
-                    ),
-                  ],
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Editar Pedido",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              "Mesa ${widget.pedido.mesa.numero} - ${widget.pedido.statusAtual}",
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.close, color: Colors.white),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+
+                // Content
+                Expanded(
+                  child: carregando
+                      ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          "Carregando cardápio...",
+                          style: TextStyle(color: Cores.textGray),
+                        ),
+                      ],
+                    ),
+                  )
+                      : Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left Panel - Cardápio
+                        Expanded(
+                          flex: 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Adicionar Itens",
+                                style: TextStyle(
+                                  color: Cores.textWhite,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              SizedBox(height: 12),
+                              Expanded(
+                                child: ListView.builder(
+                                  itemCount: cardapio.length,
+                                  itemBuilder: (context, index) {
+                                    final item = cardapio[index];
+                                    return Container(
+                                      margin: EdgeInsets.only(bottom: 8),
+                                      child: Card(
+                                        color: Cores.cardBlack,
+                                        elevation: 2,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          side: BorderSide(color: Cores.borderGray.withOpacity(0.3)),
+                                        ),
+                                        child: Padding(
+                                          padding: EdgeInsets.all(16),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 50,
+                                                height: 50,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.orange.withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Icon(
+                                                  Icons.restaurant,
+                                                  color: Colors.orange,
+                                                ),
+                                              ),
+                                              SizedBox(width: 16),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      item.nome,
+                                                      style: TextStyle(
+                                                        color: Cores.textWhite,
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    SizedBox(height: 4),
+                                                    Row(
+                                                      children: [
+                                                        Container(
+                                                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.orange.withOpacity(0.2),
+                                                            borderRadius: BorderRadius.circular(4),
+                                                          ),
+                                                          child: Text(
+                                                            item.categoria,
+                                                            style: TextStyle(
+                                                              color: Colors.orange,
+                                                              fontSize: 12,
+                                                              fontWeight: FontWeight.w500,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        SizedBox(width: 8),
+                                                        Text(
+                                                          "R\$ ${item.preco.toStringAsFixed(2)}",
+                                                          style: TextStyle(
+                                                            color: Cores.textGray,
+                                                            fontSize: 14,
+                                                            fontWeight: FontWeight.w500,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.orange,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: IconButton(
+                                                  icon: Icon(Icons.add, color: Colors.white),
+                                                  onPressed: () => _customizarItem(item),
+                                                  style: IconButton.styleFrom(
+                                                    padding: EdgeInsets.all(8),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(width: 24),
+
+                        // Right Panel - Itens do Pedido
+                        Expanded(
+                          flex: 2,
+                          child: Container(
+                            padding: EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Cores.cardBlack.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Cores.borderGray.withOpacity(0.3)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.shopping_cart, color: Colors.orange),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "Itens do Pedido",
+                                      style: TextStyle(
+                                        color: Cores.textWhite,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 16),
+
+                                if (itensSelecionados.isEmpty)
+                                  Expanded(
+                                    child: Container(
+                                      padding: EdgeInsets.all(20),
+                                      decoration: BoxDecoration(
+                                        color: Cores.borderGray.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.shopping_cart_outlined,
+                                            color: Cores.textGray,
+                                            size: 48,
+                                          ),
+                                          SizedBox(height: 8),
+                                          Text(
+                                            "Nenhum item no pedido",
+                                            style: TextStyle(
+                                              color: Cores.textGray,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                else
+                                  Expanded(
+                                    child: Column(
+                                      children: [
+                                        Expanded(
+                                          child: ListView.builder(
+                                            itemCount: itensSelecionados.length,
+                                            itemBuilder: (context, index) {
+                                              final item = itensSelecionados[index];
+                                              return Container(
+                                                margin: EdgeInsets.only(bottom: 8),
+                                                padding: EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  color: Cores.cardBlack,
+                                                  borderRadius: BorderRadius.circular(8),
+                                                  border: Border.all(color: Cores.borderGray.withOpacity(0.3)),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(
+                                                            "${item.quantidade}x ${item.nome}",
+                                                            style: TextStyle(
+                                                              color: Cores.textWhite,
+                                                              fontSize: 14,
+                                                              fontWeight: FontWeight.w500,
+                                                            ),
+                                                          ),
+                                                          if (item.observacao?.isNotEmpty == true)
+                                                            Text(
+                                                              item.observacao!,
+                                                              style: TextStyle(
+                                                                color: Cores.textGray,
+                                                                fontSize: 12,
+                                                              ),
+                                                            ),
+                                                          Text(
+                                                            "R\$ ${(item.preco * item.quantidade).toStringAsFixed(2)}",
+                                                            style: TextStyle(
+                                                              color: Colors.orange,
+                                                              fontSize: 12,
+                                                              fontWeight: FontWeight.w600,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    IconButton(
+                                                      icon: Icon(Icons.delete_outline, color: Colors.red),
+                                                      onPressed: () => _removerItem(item),
+                                                      style: IconButton.styleFrom(
+                                                        padding: EdgeInsets.all(4),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+
+                                        Container(
+                                          padding: EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                "Total:",
+                                                style: TextStyle(
+                                                  color: Cores.textWhite,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                              Text(
+                                                "R\$ ${_totalPedido.toStringAsFixed(2)}",
+                                                style: TextStyle(
+                                                  color: Colors.orange,
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                SizedBox(height: 16),
+
+                                // Observação
+                                Text(
+                                  "Observações",
+                                  style: TextStyle(
+                                    color: Cores.textWhite,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                TextField(
+                                  controller: obsController,
+                                  maxLines: 3,
+                                  style: TextStyle(color: Cores.textWhite),
+                                  decoration: InputDecoration(
+                                    hintText: "Observações do pedido...",
+                                    hintStyle: TextStyle(color: Cores.textGray),
+                                    filled: true,
+                                    fillColor: Cores.cardBlack,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: Cores.borderGray),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: Cores.borderGray),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: Colors.orange),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Footer
+                Container(
+                  padding: EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Cores.cardBlack.withOpacity(0.5),
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
+                    ),
+                    border: Border(
+                      top: BorderSide(color: Cores.borderGray.withOpacity(0.3)),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        child: Text(
+                          "Cancelar",
+                          style: TextStyle(
+                            color: Cores.textGray,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: _salvar,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 4,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.save),
+                            SizedBox(width: 8),
+                            Text(
+                              "Salvar Alterações",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            TextField(
-              controller: obsController,
-              decoration: InputDecoration(
-                hintText: "Observação do pedido...",
-              ),
-            ),
-          ],
+          ),
         ),
       ),
-      actions: [
-        TextButton(
-            child: Text("Cancelar",
-                style: TextStyle(color: Cores.textGray)),
-            onPressed: () => Navigator.pop(context)),
-        ElevatedButton(
-          child: Text("Salvar"),
-          onPressed: _salvar,
-          style: ElevatedButton.styleFrom(backgroundColor: Cores.primaryRed),
-        ),
-      ],
     );
   }
 }
