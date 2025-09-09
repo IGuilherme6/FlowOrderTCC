@@ -143,10 +143,52 @@ class _TelaPedidosState extends State<TelaPedidos> {
           ...pedido.itens.map(
                 (item) => ListTile(
               dense: true,
-              title: Text("${item.quantidade}x ${item.nome}", style: TextStyle(color: Cores.textWhite)),
-              subtitle: Text(item.categoria, style: TextStyle(color: Cores.textGray)),
-              trailing: Text("R\$ ${(item.preco * item.quantidade).toStringAsFixed(2)}",
-                  style: TextStyle(color: Cores.primaryRed)),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${item.quantidade}x ${item.nome}",
+                    style: TextStyle(color: Cores.textWhite),
+                  ),
+                  if (item.observacao != null && item.observacao!.isNotEmpty)
+                    Text(
+                      "OBS: "+item.observacao!,
+                      style: TextStyle(color: Cores.primaryRed, fontSize: 12),
+                    ),
+                ],
+              ),
+              subtitle: Text(
+                item.categoria,
+                style: TextStyle(color: Cores.textGray),
+              ),
+              trailing: Text(
+                "R\$ ${(item.preco * item.quantidade).toStringAsFixed(2)}",
+                style: TextStyle(color: Cores.primaryRed),
+              ),
+            ),
+          ),
+          if (pedido.observacao != null && pedido.observacao!.isNotEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Cores.primaryRed.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Cores.primaryRed.withOpacity(0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Observação do Pedido:',
+                    style: TextStyle(
+                        color: Cores.primaryRed,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(pedido.observacao!,
+                    style: TextStyle(color: Cores.textWhite, fontSize: 13)),
+              ],
             ),
           ),
           const SizedBox(height: 8),

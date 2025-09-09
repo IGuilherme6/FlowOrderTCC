@@ -182,7 +182,7 @@ class _TelaMesaState extends State<TelaMesa> {
                             ],
                           ),
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               Row(
                                 children: [
@@ -224,7 +224,7 @@ class _TelaMesaState extends State<TelaMesa> {
                                   return SingleChildScrollView(
                                     scrollDirection: Axis.horizontal,
                                     child: DataTable(
-                                      columnSpacing: 40,
+                                      columnSpacing: 150,
                                       headingRowColor:
                                           MaterialStateColor.resolveWith(
                                             (states) => Cores.darkRed,
@@ -235,6 +235,7 @@ class _TelaMesaState extends State<TelaMesa> {
                                             'Número',
                                             style: TextStyle(
                                               color: Cores.textWhite,
+                                              
                                             ),
                                           ),
                                         ),
@@ -262,6 +263,7 @@ class _TelaMesaState extends State<TelaMesa> {
                                             ),
                                           ),
                                         ),
+
                                       ],
                                       rows: mesas
                                           .map(
