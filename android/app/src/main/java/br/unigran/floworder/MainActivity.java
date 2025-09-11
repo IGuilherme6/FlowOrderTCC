@@ -1,6 +1,0 @@
-package br.unigran.floworder;
-
-import io.flutter.embedding.android.FlutterActivity;
-
-public class MainActivity extends FlutterActivity {
-}
