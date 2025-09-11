@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/Cardapio.dart';
+import '../models/Categoria.dart'; // Importe o novo modelo
 
 class CardapioFirebase {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -12,7 +13,6 @@ class CardapioFirebase {
   }
 
   Future<String?> verificarGerenteUid() async {
-    // Usa a função que você já tem
     String? userId = pegarIdUsuarioLogado();
     if (userId == null) return null;
 
@@ -44,13 +44,8 @@ class CardapioFirebase {
 
       if (cargo != 'Gerente') throw Exception('Nenhum Gerente Logado');
 
-      // Normaliza/valida campos mínimos
-      final nome = (cardapio.nome ?? '').trim().isEmpty
-          ? 'Item sem nome'
-          : cardapio.nome!;
-      final descricao = (cardapio.descricao ?? '').trim().isEmpty
-          ? 'Descrição não informada'
-          : cardapio.descricao!;
+      final nome = (cardapio.nome ?? '').trim().isEmpty ? 'Item sem nome' : cardapio.nome!;
+      final descricao = (cardapio.descricao ?? '').trim().isEmpty ? 'Descrição não informada' : cardapio.descricao!;
       final preco = cardapio.preco ?? 0.0;
       final categoria = (cardapio.categoria ?? 'Outros').trim();
 
@@ -64,7 +59,6 @@ class CardapioFirebase {
         'criadoEm': FieldValue.serverTimestamp(),
       });
 
-      // atualiza campo uid no documento (opcional)
       await docRef.update({'uid': docRef.id});
       return docRef.id;
     } catch (e) {
@@ -162,16 +156,16 @@ class CardapioFirebase {
       } else
         throw Exception("Para Excluir deve ser O gerente do estabelecimento");
     } catch (e) {
-      throw Exception('Erro ao excluir cardápio:');
+      throw Exception('Erro ao excluir cardápio: ${e.toString()}');
     }
   }
 
   /// Suspende/reativa (atualiza campo 'ativo')
   Future<void> suspenderCardapio(
-    String gerenteId,
-    String cardapioId,
-    bool ativo,
-  ) async {
+      String gerenteId,
+      String cardapioId,
+      bool ativo,
+      ) async {
     try {
       if (gerenteId.isEmpty) throw Exception('GerenteId inválido');
 
@@ -181,6 +175,68 @@ class CardapioFirebase {
       });
     } catch (e) {
       throw Exception('Erro ao alterar status do cardápio: ${e.toString()}');
+    }
+  }
+
+  // --- Novos métodos para Gerenciamento de Categorias ---
+
+  /// Adiciona uma nova categoria e retorna o id gerado
+  Future<String> adicionarCategoria(String gerenteId, String nomeCategoria) async {
+    try {
+      // Validação simples: não permitir nomes vazios ou apenas espaços
+      if (nomeCategoria.trim().isEmpty) {
+        throw Exception("O nome da categoria não pode estar vazio.");
+      }
+      DocumentReference docRef = await _firestore.collection('Categorias').add({
+        'nome': nomeCategoria.trim(), // Salva o nome limpo
+        'gerenteUid': gerenteId,
+        'criadoEm': FieldValue.serverTimestamp(),
+      });
+      return docRef.id;
+    } catch (e) {
+      throw Exception('Erro ao adicionar categoria: ${e.toString()}');
+    }
+  }
+
+  /// Busca as categorias de um gerente em tempo real
+  Stream<QuerySnapshot> streamCategorias(String gerenteId) {
+    try {
+      if (gerenteId.isEmpty) return const Stream.empty();
+      return _firestore
+          .collection('Categorias')
+          .where('gerenteUid', isEqualTo: gerenteId)
+          .snapshots();
+    } catch (e) {
+      print('Erro ao buscar stream de categorias: $e');
+      return const Stream.empty();
+    }
+  }
+
+  /// Atualiza o nome de uma categoria
+  Future<void> atualizarCategoria(String categoriaId, String novoNome) async {
+    try {
+      if (novoNome.trim().isEmpty) {
+        throw Exception("O nome da categoria não pode estar vazio.");
+      }
+      await _firestore.collection('Categorias').doc(categoriaId).update({
+        'nome': novoNome.trim(),
+      });
+    } catch (e) {
+      throw Exception('Erro ao atualizar categoria: ${e.toString()}');
+    }
+  }
+
+  /// Deleta uma categoria
+  Future<void> deletarCategoria(String categoriaId) async {
+    try {
+      // Antes de deletar a categoria, é uma boa prática verificar se ela está sendo usada em algum item do cardápio.
+      // Se houver itens com essa categoria, você pode optar por:
+      // 1. Impedir a exclusão.
+      // 2. Perguntar ao usuário se ele quer reatribuir os itens para uma categoria padrão (ex: 'Outros').
+      // Para simplificar por enquanto, vamos apenas deletar.
+      await _firestore.collection('Categorias').doc(categoriaId).delete();
+    } catch (e) {
+      throw Exception('Erro ao deletar categoria: ${e.toString()}');
     }
   }
 }

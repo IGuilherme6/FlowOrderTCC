@@ -34,7 +34,7 @@ class MyApp extends StatelessWidget {
         '/telalogin': (context) => Tela_Login(),
         '/funcionarios': (context) => TelaCadastroUsuario(),
         '/dashboard': (context) => TelaDashboard(),
-        '/relatorios': (context) => TelaRelatorio(),
+        '/relatorios': (context) => TelaRelatorios(),
         '/pedidos': (context) => TelaPedidos(),
         '/caixa': (context) => TelaCaixa(),
         '/cardapio': (context) => TelaCardapio(),

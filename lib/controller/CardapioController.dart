@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../firebase/CardapioFirebase.dart';
-import '../firebase/UsuarioFirebase.dart';
 import '../models/Cardapio.dart';
+import '../models/Categoria.dart'; // Importe o novo modelo
 
 class CardapioController {
   final CardapioFirebase _cardapioFirebase = CardapioFirebase();
@@ -26,7 +26,7 @@ class CardapioController {
 
       return 'Cardápio cadastrado com sucesso';
     } catch (e) {
-      throw Exception('Erro ao cadastrar cardápio');
+      throw Exception('Erro ao cadastrar cardápio: ${e.toString()}');
     }
   }
 
@@ -57,10 +57,7 @@ class CardapioController {
     }
 
     return _cardapioFirebase.streamCardapios(userId).map((snapshot) {
-      return snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        return Cardapio.fromMap(doc.id, data);
-      }).toList();
+      return _cardapioFirebase.querySnapshotParaCardapios(snapshot); // Usa a função de conversão e ordenação
     });
   }
 
@@ -94,7 +91,7 @@ class CardapioController {
       await _cardapioFirebase.excluirCardapio(userId, cardapioUid);
       return 'Cardápio deletado com sucesso';
     } catch (e) {
-      throw Exception('Erro ao deletar cardápio:');
+      throw Exception('Erro ao deletar cardápio: ${e.toString()}');
     }
   }
 
@@ -106,12 +103,68 @@ class CardapioController {
     }
 
     try {
-      await _cardapioFirebase.suspenderCardapio(userId, cardapioUid, suspender);
+      await _cardapioFirebase.suspenderCardapio(userId, cardapioUid, !suspender); // Corrigido: 'suspender' deve ser o novo estado (ativo ou inativo)
       return suspender
           ? 'Cardápio suspenso com sucesso'
           : 'Cardápio reativado com sucesso';
     } catch (e) {
       throw Exception('Erro ao alterar status do cardápio: ${e.toString()}');
     }
+  }
+
+  // --- Novos métodos para Categorias ---
+
+  /// Stream de categorias do gerente (tempo real), combinando com as categorias padrão.
+  Future<Stream<List<String>>> buscarCategoriasTempoReal() async {
+    String? userId = await _cardapioFirebase.verificarGerenteUid();
+    if (userId == null) {
+      return Stream.value(['Todos', 'Bebida', 'Prato', 'Lanche', 'Outros']); // Retorna apenas as padrão
+    }
+
+    // Combina as categorias padrão com as do Firebase.
+    return _cardapioFirebase.streamCategorias(userId).map((snapshot) {
+      final categoriasDoGerente = snapshot.docs.map((doc) {
+        return Categoria.fromMap(doc.id, doc.data() as Map<String, dynamic>);
+      }).toList();
+
+      final listaNomes = categoriasDoGerente.map((c) => c.nome).toList();
+
+      final categoriasPadrao = ['Todos', 'Bebida', 'Prato', 'Lanche', 'Outros'];
+      // Usa um Set para garantir que não haja duplicatas e depois converte de volta para lista.
+      final todasCategorias = <String>{...categoriasPadrao, ...listaNomes}.toList();
+      return todasCategorias;
+    });
+  }
+
+  /// Adiciona uma nova categoria.
+  Future<void> adicionarCategoria(String nome) async {
+    String? userId = await _cardapioFirebase.pegarIdUsuarioLogado();
+    if (userId == null) {
+      throw Exception('Erro: Nenhum Gerente logado');
+    }
+    await _cardapioFirebase.adicionarCategoria(userId, nome);
+  }
+
+  /// Atualiza uma categoria.
+  Future<void> atualizarCategoria(String categoriaUid, String novoNome) async {
+    await _cardapioFirebase.atualizarCategoria(categoriaUid, novoNome);
+  }
+
+  /// Deleta uma categoria.
+  Future<void> deletarCategoria(String categoriaUid) async {
+    await _cardapioFirebase.deletarCategoria(categoriaUid);
+  }
+
+  // Método para buscar as categorias do Firebase (sem as padrão) para o gerenciamento.
+  Future<Stream<List<Categoria>>> buscarCategoriasGerenciamento() async {
+    String? userId = await _cardapioFirebase.verificarGerenteUid();
+    if (userId == null) {
+      return Stream.value([]);
+    }
+    return _cardapioFirebase.streamCategorias(userId).map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return Categoria.fromMap(doc.id, doc.data() as Map<String, dynamic>);
+      }).toList();
+    });
   }
 }
