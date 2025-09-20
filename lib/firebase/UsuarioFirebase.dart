@@ -13,6 +13,13 @@ class UsuarioFirebase {
     return user?.uid;
   }
 
+  Future<String?> pegarGerenteUid(String id) async {
+    final doc = await _usuariosRef.doc(id).get();
+    final userData = doc.data() as Map<String, dynamic>?;
+    final gerenteUid = userData?['gerenteUid'] as String?;
+    return gerenteUid;
+  }
+
   /// Criar usuário no Firebase Auth
   Future<String> criarUsuarioAuth(String email, String senha) async {
     UserCredential userCredential = await FirebaseAuth.instance

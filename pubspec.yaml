@@ -47,6 +47,8 @@ dependencies:
   flutter_multi_formatter: ^2.11.11 # Formatação de texto (CPF, telefone, etc.)
   build_runner: ^2.4.6 # Geração automática de código
   fl_chart: ^1.1.0
+  pdf: ^3.10.4
+  printing: ^5.11.0
 
 dev_dependencies:
   flutter_test:

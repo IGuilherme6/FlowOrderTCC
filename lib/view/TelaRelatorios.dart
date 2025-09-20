@@ -1,375 +1,332 @@
 import 'package:flutter/material.dart';
-import 'package:floworder/controller/RelatorioController.dart';
 import 'package:intl/intl.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:floworder/view/BarraLateral.dart';
+import 'package:floworder/auxiliar/Cores.dart';
+import 'package:floworder/models/Pedido.dart';
+import 'package:floworder/firebase/CardapioFirebase.dart';
+
+import '../firebase/RelatorioService.dart';
+import '../firebase/UsuarioFirebase.dart';
 
 class TelaRelatorios extends StatefulWidget {
+  const TelaRelatorios({super.key});
+
   @override
-  _TelaRelatoriosState createState() => _TelaRelatoriosState();
+  State<TelaRelatorios> createState() => _TelaRelatoriosState();
 }
 
 class _TelaRelatoriosState extends State<TelaRelatorios> {
-  final RelatorioController _relatorioController = RelatorioController();
-  String filtroSelecionado = "Diário";
-  final DateFormat formatoData = DateFormat('dd/MM/yyyy');
+  final RelatorioService _relatorioService = RelatorioService();
+  final UsuarioFirebase _user = UsuarioFirebase();
 
-  // Função para calcular período baseado no filtro
-  Map<String, DateTime> _calcularPeriodo() {
-    DateTime agora = DateTime.now();
-    DateTime inicio;
 
-    switch (filtroSelecionado) {
-      case "Diário":
-        inicio = DateTime(agora.year, agora.month, agora.day);
-        break;
-      case "Semanal":
-        inicio = agora.subtract(Duration(days: agora.weekday - 1));
-        inicio = DateTime(inicio.year, inicio.month, inicio.day);
-        break;
-      case "Mensal":
-        inicio = DateTime(agora.year, agora.month, 1);
-        break;
-      case "Anual":
-        inicio = DateTime(agora.year, 1, 1);
-        break;
-      default:
-        inicio = DateTime(agora.year, agora.month, agora.day);
-    }
+  DateTime? _dataInicio;
+  DateTime? _dataFim;
+  String _tipoRelatorio = 'vendas_detalhado';
+  String _statusFiltro = 'todos';
 
-    return {'inicio': inicio, 'fim': agora};
+  bool _carregando = false;
+
+  final DateFormat _formatoData = DateFormat('dd/MM/yyyy');
+  final DateFormat _formatoDataHora = DateFormat('dd/MM/yyyy HH:mm');
+  final NumberFormat _formatoMoeda =
+  NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$', decimalDigits: 2);
+
+  @override
+  void initState() {
+    super.initState();
+    _dataFim = DateTime.now();
+    _dataInicio = _dataFim!.subtract(const Duration(days: 30));
   }
 
+  /// Método principal: busca dados e gera PDF na hora (não tem mais botão buscar separado)
+  Future<void> _gerarEImprimirRelatorio() async {
+    setState(() => _carregando = true);
+
+    try {
+      // 1) obter gerenteUid do usuário logado
+      final gerenteUid = _user.pegarIdUsuarioLogado() as String;
+      if (gerenteUid == null || gerenteUid.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: const Text('Gerente não encontrado'), backgroundColor: Cores.primaryRed),
+        );
+        return;
+      }
+
+      // 2) chamar service para montar dados
+      final dados = await _relatorioService.gerarRelatorio(
+        gerenteUid: gerenteUid,
+        tipo: _tipoRelatorio,
+        inicio: _dataInicio,
+        fim: _dataFim,
+        status: _statusFiltro,
+      );
+
+      // 3) se não tiver dados
+      final temDados = (dados.isNotEmpty && dados.values.any((v) => v != null && v is List ? (v as List).isNotEmpty : true));
+      if (!temDados) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: const Text('Nenhum dado encontrado para os filtros selecionados'), backgroundColor: Cores.primaryRed),
+        );
+        return;
+      }
+
+      // 4) montar PDF
+      final pdf = pw.Document();
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          build: (ctx) {
+            return [
+              _buildCabecalhoPDF(),
+              if (_tipoRelatorio == 'vendas_geral')
+                _buildResumoPDF(dados['resumo'] as Map<String, dynamic>)
+              else if (_tipoRelatorio == 'vendas_detalhado')
+                _buildTabelaPedidosPDF(dados['pedidos'] as List)
+              else if (_tipoRelatorio == 'pagamentos')
+                  _buildTabelaPagamentosPDF(dados['pagamentos'] as List)
+                else if (_tipoRelatorio == 'produtos')
+                    _buildTabelaProdutosPDF(dados['produtos'] as List),
+            ];
+          },
+        ),
+      );
+
+      await Printing.layoutPdf(onLayout: (format) => pdf.save());
+    } catch (e, st) {
+      debugPrint('Erro ao gerar PDF: $e\n$st');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao gerar relatório: $e'), backgroundColor: Cores.primaryRed),
+      );
+    } finally {
+      setState(() => _carregando = false);
+    }
+  }
+
+  // ---------- PDF helpers ----------
+  pw.Widget _buildCabecalhoPDF() {
+    String titulo = 'Relatório: ';
+    switch (_tipoRelatorio) {
+      case 'vendas_geral':
+        titulo += 'Vendas Geral';
+        break;
+      case 'vendas_detalhado':
+        titulo += 'Vendas Detalhado ${_statusFiltro != 'todos' ? _statusFiltro : ''}';
+        break;
+      case 'pagamentos':
+        titulo += 'Relatório de Pagamentos';
+        break;
+      case 'produtos':
+        titulo += 'Produtos Mais Vendidos';
+        break;
+    }
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(titulo, style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
+        pw.Text('Período: ${_formatoData.format(_dataInicio!)} até ${_formatoData.format(_dataFim!)}'),
+        pw.SizedBox(height: 12),
+      ],
+    );
+  }
+
+  pw.Widget _buildResumoPDF(Map<String, dynamic> resumo) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text('Resumo Geral', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+        pw.SizedBox(height: 8),
+        pw.Text('Total de pedidos: ${resumo['totalPedidos']}'),
+        pw.Text('Total de vendas: ${_formatoMoeda.format(resumo['totalVendas'])}'),
+        pw.Text('Ticket médio: ${_formatoMoeda.format(resumo['ticketMedio'])}'),
+      ],
+    );
+  }
+
+  pw.Widget _buildTabelaPedidosPDF(List pedidos) {
+    return pw.TableHelper.fromTextArray(
+      headers: ['Data/Hora', 'Mesa', 'Status', 'Itens', 'Total'],
+      data: pedidos.map((p) {
+        final pedido = p['pedido'] as Pedido;
+        final mesaNome = p['mesaNome'] as String;
+        final itensStr = pedido.itens.map((i) => '${i.nome} x${i.quantidade}').join('\n');
+        return [
+          _formatoDataHora.format(pedido.horario),
+          mesaNome,
+          pedido.statusAtual,
+          itensStr,
+          _formatoMoeda.format(pedido.calcularTotal()),
+        ];
+      }).toList(),
+      headerDecoration: pw.BoxDecoration(color: PdfColors.red900),
+      headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold),
+      border: pw.TableBorder.all(color: PdfColors.grey300),
+      cellStyle: pw.TextStyle(fontSize: 10),
+    );
+  }
+
+  pw.Widget _buildTabelaPagamentosPDF(List pagamentos) {
+    return pw.TableHelper.fromTextArray(
+      headers: ['Pedido', 'Mesa', 'Método', 'Valor', 'Desconto', 'Troco'],
+      data: pagamentos.map((m) {
+        final pedido = m['pedido'] as Pedido;
+        final mesaNome = m['mesaNome'] as String;
+        final pag = m['pagamento'] as Map<String, dynamic>;
+        return [
+          pedido.uid ?? '',
+          mesaNome,
+          pag['metodoPagamento'] ?? '',
+          _formatoMoeda.format((pag['valorPago'] ?? 0).toDouble()),
+          _formatoMoeda.format((pag['desconto'] ?? 0).toDouble()),
+          _formatoMoeda.format((pag['troco'] ?? 0).toDouble()),
+        ];
+      }).toList(),
+      headerDecoration: pw.BoxDecoration(color: PdfColors.red900),
+      headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold),
+      border: pw.TableBorder.all(color: PdfColors.grey300),
+      cellStyle: pw.TextStyle(fontSize: 10),
+    );
+  }
+
+  pw.Widget _buildTabelaProdutosPDF(List produtos) {
+    // produtos é uma lista de MapEntry (nome, quantidade) na service
+    final rows = produtos.map((e) {
+      if (e is MapEntry) return [e.key, e.value.toString()];
+      if (e is List && e.length >= 2) return [e[0].toString(), e[1].toString()];
+      return [e.toString(), ''];
+    }).toList();
+
+    return pw.TableHelper.fromTextArray(
+      headers: ['Produto', 'Quantidade'],
+      data: rows,
+      headerDecoration: pw.BoxDecoration(color: PdfColors.red900),
+      headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold),
+      border: pw.TableBorder.all(color: PdfColors.grey300),
+    );
+  }
+
+  // ---------- UI ----------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("📊 Relatórios"),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// FILTRO DE PERÍODO
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButton<String>(
-                value: filtroSelecionado,
-                isExpanded: true,
-                underline: SizedBox(),
-                items: ["Diário", "Semanal", "Mensal", "Anual"]
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
-                onChanged: (valor) {
-                  setState(() {
-                    filtroSelecionado = valor!;
-                    // Limpar cache quando filtro muda
-                    _relatorioController.clearCache();
-                  });
-                },
-              ),
+      backgroundColor: Cores.backgroundBlack,
+      body: Row(
+        children: [
+          Barralateral(currentRoute: '/relatorios'),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Relatórios', style: TextStyle(color: Cores.textWhite, fontSize: 32, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 24),
+                _buildFiltros(),
+                const SizedBox(height: 24),
+                _buildBotoesAcao(),
+                const SizedBox(height: 12),
+                if (_carregando) Center(child: CircularProgressIndicator(color: Cores.primaryRed)),
+              ]),
             ),
-            SizedBox(height: 20),
-
-            /// ESTATÍSTICAS GERAIS
-            Text(
-              "📊 Resumo Geral",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            FutureBuilder<Map<String, dynamic>>(
-              future: () {
-                final periodo = _calcularPeriodo();
-                return _relatorioController.estatisticasGerais(
-                  inicio: periodo['inicio'],
-                  fim: periodo['fim'],
-                );
-              }(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Text("Erro: ${snapshot.error}");
-                }
-                if (!snapshot.hasData) {
-                  return Text("Nenhum dado encontrado");
-                }
-
-                final stats = snapshot.data!;
-                return Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Total de Pedidos:", style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text("${stats['totalPedidos']}"),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Faturamento Total:", style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text("R\$ ${(stats['faturamentoTotal'] as double).toStringAsFixed(2)}"),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Ticket Médio:", style: TextStyle(fontWeight: FontWeight.bold)),
-                            Text("R\$ ${(stats['ticketMedio'] as double).toStringAsFixed(2)}"),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Produto Mais Vendido:", style: TextStyle(fontWeight: FontWeight.bold)),
-                            Expanded(child: Text("${stats['produtoMaisVendido']}", textAlign: TextAlign.end)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-            SizedBox(height: 20),
-
-            /// RELATÓRIO DE PEDIDOS RECENTES
-            Text(
-              "📋 Pedidos Recentes",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            FutureBuilder<List<Map<String, dynamic>>>(
-              future: _relatorioController.listarPedidos(limite: 10),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Text("Erro: ${snapshot.error}");
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Text("Nenhum pedido encontrado");
-                }
-
-                return Column(
-                  children: snapshot.data!.map((pedido) {
-                    final horario = (pedido['horario'] as Timestamp?)?.toDate() ?? DateTime.now();
-                    final itens = pedido['itens'] as List<dynamic>? ?? [];
-
-                    // Calcular total do pedido
-                    double total = 0.0;
-                    for (var item in itens) {
-                      final preco = (item['preco'] as num? ?? 0).toDouble();
-                      final quantidade = (item['quantidade'] as num? ?? 0).toInt();
-                      total += preco * quantidade;
-                    }
-
-                    return Card(
-                      child: ListTile(
-                        leading: Icon(Icons.shopping_cart, color: Colors.deepPurple),
-                        title: Text("Pedido #${pedido['uid'] ?? 'N/A'}"),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Mesa: ${pedido['mesa'] ?? 'N/A'}"),
-                            Text("Total: R\$ ${total.toStringAsFixed(2)}"),
-                            Text("Status: ${pedido['statusAtual'] ?? 'N/A'}"),
-                          ],
-                        ),
-                        trailing: Text(formatoData.format(horario)),
-                        isThreeLine: true,
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-            SizedBox(height: 20),
-
-            /// RELATÓRIO PRODUTOS MAIS VENDIDOS
-            Text(
-              "🍔 Top 10 Produtos Mais Vendidos",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            FutureBuilder<Map<String, int>>(
-              future: _relatorioController.produtosMaisVendidos(limite: 10),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Text("Erro: ${snapshot.error}");
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Text("Nenhum produto encontrado");
-                }
-
-                return Column(
-                  children: snapshot.data!.entries.map((e) {
-                    return Card(
-                      child: ListTile(
-                        leading: Icon(Icons.fastfood, color: Colors.orange),
-                        title: Text(e.key),
-                        trailing: Chip(
-                          label: Text("${e.value}"),
-                          backgroundColor: Colors.green.shade100,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-            SizedBox(height: 20),
-
-            /// RELATÓRIO FATURAMENTO POR PRODUTO
-            Text(
-              "💰 Faturamento por Produto",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            FutureBuilder<Map<String, double>>(
-              future: _relatorioController.faturamentoPorProduto(limite: 10),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Text("Erro: ${snapshot.error}");
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Text("Nenhum dado encontrado");
-                }
-
-                return Column(
-                  children: snapshot.data!.entries.map((e) {
-                    return Card(
-                      child: ListTile(
-                        leading: Icon(Icons.attach_money, color: Colors.green),
-                        title: Text(e.key),
-                        trailing: Text(
-                          "R\$ ${e.value.toStringAsFixed(2)}",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-            SizedBox(height: 20),
-
-            /// RELATÓRIO PEDIDOS POR DIA
-            Text(
-              "📆 Pedidos por Dia ($filtroSelecionado)",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            FutureBuilder<Map<String, int>>(
-              future: () {
-                final periodo = _calcularPeriodo();
-                return _relatorioController.pedidosPorDia(
-                  inicio: periodo['inicio'],
-                  fim: periodo['fim'],
-                );
-              }(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Text("Erro: ${snapshot.error}");
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Text("Nenhum dado encontrado para o período selecionado");
-                }
-
-                return Column(
-                  children: snapshot.data!.entries.map((e) {
-                    return Card(
-                      child: ListTile(
-                        leading: Icon(Icons.calendar_today, color: Colors.blue),
-                        title: Text(e.key),
-                        trailing: Chip(
-                          label: Text("${e.value}"),
-                          backgroundColor: Colors.blue.shade100,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-            SizedBox(height: 20),
-
-            /// RELATÓRIO FATURAMENTO POR DIA
-            Text(
-              "💵 Faturamento por Dia ($filtroSelecionado)",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 10),
-            FutureBuilder<Map<String, double>>(
-              future: () {
-                final periodo = _calcularPeriodo();
-                return _relatorioController.faturamentoPorDia(
-                  inicio: periodo['inicio'],
-                  fim: periodo['fim'],
-                );
-              }(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Text("Erro: ${snapshot.error}");
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Text("Nenhum dado encontrado para o período selecionado");
-                }
-
-                return Column(
-                  children: snapshot.data!.entries.map((e) {
-                    return Card(
-                      child: ListTile(
-                        leading: Icon(Icons.monetization_on, color: Colors.green),
-                        title: Text(e.key),
-                        trailing: Text(
-                          "R\$ ${e.value.toStringAsFixed(2)}",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                );
-              },
-            ),
-            SizedBox(height: 40),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _buildFiltros() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: Cores.cardBlack, borderRadius: BorderRadius.circular(12), border: Border.all(color: Cores.borderGray)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Filtros', style: TextStyle(color: Cores.textWhite, fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+
+        // Tipo relatório
+        DropdownButton<String>(
+          value: _tipoRelatorio,
+          isExpanded: true,
+          dropdownColor: Cores.cardBlack,
+          style: TextStyle(color: Cores.textWhite),
+          underline: Container(),
+          items: const [
+            DropdownMenuItem(value: 'vendas_geral', child: Text('Vendas - Geral')),
+            DropdownMenuItem(value: 'vendas_detalhado', child: Text('Vendas - Detalhado')),
+            DropdownMenuItem(value: 'pagamentos', child: Text('Relatório de Pagamentos')),
+            DropdownMenuItem(value: 'produtos', child: Text('Produtos Mais Vendidos')),
+          ],
+          onChanged: (v) => setState(() {
+            _tipoRelatorio = v!;
+            // reset status ao trocar tipo
+            if (_tipoRelatorio != 'vendas_detalhado') _statusFiltro = 'todos';
+          }),
+        ),
+        const SizedBox(height: 16),
+
+        // Datas
+        Row(children: [
+          Expanded(
+            child: InkWell(
+              onTap: () async {
+                final picked = await showDatePicker(context: context, initialDate: _dataInicio ?? DateTime.now(), firstDate: DateTime(2020), lastDate: DateTime.now());
+                if (picked != null) setState(() => _dataInicio = picked);
+              },
+              child: _buildCampoFiltro('Data Início', _dataInicio != null ? _formatoData.format(_dataInicio!) : 'Selecionar'),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: InkWell(
+              onTap: () async {
+                final picked = await showDatePicker(context: context, initialDate: _dataFim ?? DateTime.now(), firstDate: DateTime(2020), lastDate: DateTime.now());
+                if (picked != null) setState(() => _dataFim = picked);
+              },
+              child: _buildCampoFiltro('Data Fim', _dataFim != null ? _formatoData.format(_dataFim!) : 'Selecionar'),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 16),
+
+        // Status (só em detalhado)
+        if (_tipoRelatorio == 'vendas_detalhado')
+          DropdownButton<String>(
+            value: _statusFiltro,
+            isExpanded: true,
+            dropdownColor: Cores.cardBlack,
+            style: TextStyle(color: Cores.textWhite),
+            underline: Container(),
+            items: const [
+              DropdownMenuItem(value: 'todos', child: Text('Todos')),
+              DropdownMenuItem(value: 'Entregue', child: Text('Entregue')),
+              DropdownMenuItem(value: 'Cancelado', child: Text('Cancelado')),
+            ],
+            onChanged: (v) => setState(() => _statusFiltro = v!),
+          ),
+      ]),
+    );
+  }
+
+  Widget _buildCampoFiltro(String label, String valor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(color: Cores.backgroundBlack, borderRadius: BorderRadius.circular(8), border: Border.all(color: Cores.borderGray)),
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Text(label, style: TextStyle(color: Cores.textGray)),
+        Text(valor, style: TextStyle(color: Cores.textWhite)),
+      ]),
+    );
+  }
+
+  Widget _buildBotoesAcao() {
+    return Row(children: [
+      ElevatedButton.icon(
+        onPressed: _carregando ? null : _gerarEImprimirRelatorio,
+        icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+        label: const Text('Gerar PDF', style: TextStyle(color: Colors.white)),
+        style: ElevatedButton.styleFrom(backgroundColor: Cores.primaryRed),
+      ),
+    ]);
   }
 }
