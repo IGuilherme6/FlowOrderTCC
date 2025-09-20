@@ -178,7 +178,7 @@ class Barralateral extends StatelessWidget {
       case '/funcionarios':
         return TelaCadastroUsuario();
       case '/relatorios':
-        return TelaRelatorio();
+        return TelaRelatorios();
       default:
         return TelaHome();
     }

@@ -32,20 +32,24 @@ class _TelaCardapioState extends State<TelaCardapio> {
   void _carregarCategorias() async {
     // Carrega categorias para o Dropdown de filtro
     (await _controller.buscarCategoriasTempoReal()).listen((listaNomes) {
-      setState(() {
-        _categoriasDisponiveis = listaNomes;
-        // Garante que o filtro atual permaneça válido
-        if (_categoriaFiltro != null && !_categoriasDisponiveis.contains(_categoriaFiltro)) {
-          _categoriaFiltro = 'Todos';
-        }
-      });
+      if (mounted) {
+        setState(() {
+          _categoriasDisponiveis = listaNomes;
+          // Garante que o filtro atual permaneça válido
+          if (_categoriaFiltro != null && !_categoriasDisponiveis.contains(_categoriaFiltro)) {
+            _categoriaFiltro = 'Todos';
+          }
+        });
+      }
     });
 
     // Carrega categorias para o modal de gerenciamento
     (await _controller.buscarCategoriasGerenciamento()).listen((listaCategorias) {
-      setState(() {
-        _categoriasGerenciamento = listaCategorias;
-      });
+      if (mounted) {
+        setState(() {
+          _categoriasGerenciamento = listaCategorias;
+        });
+      }
     });
   }
 
@@ -114,7 +118,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar', style: TextStyle(color: Colors.grey))),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar', style: TextStyle(color: Cores.textGray))),
             ElevatedButton(
               onPressed: () async {
                 try {
@@ -136,7 +140,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: ${e.toString()}')));
                 }
               },
-              child: Text('Salvar'),
+              child: Text('Salvar',style: TextStyle(color: Cores.textWhite),),
               style: ElevatedButton.styleFrom(backgroundColor: Cores.primaryRed),
             ),
           ],
@@ -183,7 +187,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar',style: TextStyle(color: Cores.textGray),)),
             ElevatedButton(
               onPressed: () async {
                 try {
@@ -199,7 +203,10 @@ class _TelaCardapioState extends State<TelaCardapio> {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: ${e.toString()}')));
                 }
               },
-              child: Text('Salvar'),
+              child: Text('Salvar',style: TextStyle(color: Cores.textWhite),),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Cores.primaryRed,
+              ),
             ),
           ],
         );
@@ -236,9 +243,6 @@ class _TelaCardapioState extends State<TelaCardapio> {
 
   void _alternarSuspensao(Cardapio cardapio) async {
     try {
-      // O parâmetro `suspender` no `_controller.suspenderCardapio` é o *novo estado*.
-      // Se `cardapio.ativo` é `true` (ativo), queremos suspender, então o novo estado é `false`.
-      // Se `cardapio.ativo` é `false` (suspenso), queremos reativar, então o novo estado é `true`.
       await _controller.suspenderCardapio(cardapio.uid, !cardapio.ativo);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(cardapio.ativo ? 'Item suspenso' : 'Item reativado')),
@@ -248,81 +252,235 @@ class _TelaCardapioState extends State<TelaCardapio> {
     }
   }
 
-  // Novo modal para gerenciar categorias
+  // Modal MELHORADO para gerenciar categorias com StatefulBuilder
   void _mostrarDialogGerenciarCategorias() {
     final nomeController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: Cores.cardBlack,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Text('Gerenciar Categorias', style: TextStyle(color: Cores.textWhite)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nomeController,
-                decoration: InputDecoration(labelText: 'Nova Categoria', labelStyle: TextStyle(color: Cores.textGray), filled: true, fillColor: Cores.backgroundBlack),
-                style: TextStyle(color: Cores.textWhite),
-              ),
-              SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () async {
-                  if (nomeController.text.isNotEmpty) {
-                    try {
-                      await _controller.adicionarCategoria(nomeController.text);
-                      nomeController.clear();
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Categoria adicionada com sucesso!')));
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: ${e.toString()}')));
-                    }
-                  }
-                },
-                child: Text('Adicionar'),
-                style: ElevatedButton.styleFrom(backgroundColor: Cores.primaryRed),
-              ),
-              SizedBox(height: 24),
-              // Lista de categorias existentes para edição/exclusão
-              if (_categoriasGerenciamento.isNotEmpty)
-                ..._categoriasGerenciamento.map((categoria) {
-                  return ListTile(
-                    title: Text(categoria.nome, style: TextStyle(color: Cores.textWhite)),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.edit, color: Cores.lightRed),
-                          onPressed: () => _mostrarDialogEditarCategoria(categoria),
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: Cores.cardBlack,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              title: Text('Gerenciar Categorias', style: TextStyle(color: Cores.textWhite)),
+              content: Container(
+                width: 400, // Define uma largura fixa para o modal
+                constraints: BoxConstraints(maxHeight: 500), // Altura máxima
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Campo para adicionar nova categoria
+                    TextField(
+                      controller: nomeController,
+                      decoration: InputDecoration(
+                        labelText: 'Nova Categoria',
+                        labelStyle: TextStyle(color: Cores.textGray),
+                        filled: true,
+                        fillColor: Cores.backgroundBlack,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Cores.borderGray),
                         ),
-                        IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
-                          onPressed: () async {
-                            try {
-                              await _controller.deletarCategoria(categoria.uid);
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Categoria excluída!')));
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: ${e.toString()}')));
-                            }
+                      ),
+                      style: TextStyle(color: Cores.textWhite),
+                      onSubmitted: (_) => _adicionarCategoria(nomeController, setDialogState),
+                    ),
+                    SizedBox(height: 12),
+
+                    // Botão adicionar
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => _adicionarCategoria(nomeController, setDialogState),
+                        child: Text('Adicionar Categoria', style: TextStyle(color: Cores.textWhite),),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Cores.primaryRed,
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 24),
+
+                    // Título da lista
+                    if (_categoriasGerenciamento.isNotEmpty)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Categorias Existentes:',
+                          style: TextStyle(color: Cores.textWhite, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    SizedBox(height: 8),
+
+                    // Lista scrollável de categorias
+                    Flexible(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Cores.borderGray),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: _categoriasGerenciamento.isEmpty
+                            ? Container(
+                          height: 100,
+                          child: Center(
+                            child: Text(
+                              'Nenhuma categoria cadastrada',
+                              style: TextStyle(color: Cores.textGray),
+                            ),
+                          ),
+                        )
+                            : ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: _categoriasGerenciamento.length,
+                          itemBuilder: (context, index) {
+                            final categoria = _categoriasGerenciamento[index];
+                            return Container(
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  bottom: index < _categoriasGerenciamento.length - 1
+                                      ? BorderSide(color: Cores.borderGray, width: 0.5)
+                                      : BorderSide.none,
+                                ),
+                              ),
+                              child: ListTile(
+                                dense: true,
+                                title: Text(
+                                  categoria.nome,
+                                  style: TextStyle(color: Cores.textWhite),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.edit, color: Cores.lightRed, size: 20),
+                                      onPressed: () => _mostrarDialogEditarCategoria(categoria, setDialogState),
+                                      tooltip: 'Editar categoria',
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.delete, color: Colors.red, size: 20),
+                                      onPressed: () => _confirmarExcluirCategoria(categoria, setDialogState),
+                                      tooltip: 'Excluir categoria',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
                           },
                         ),
-                      ],
+                      ),
                     ),
-                  );
-                }).toList(),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text('Fechar', style: TextStyle(color: Colors.grey))),
-          ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Fechar', style: TextStyle(color: Colors.grey)),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  // Novo modal para editar categoria
-  void _mostrarDialogEditarCategoria(Categoria categoria) {
+  // Função para adicionar categoria com atualização do dialog
+  Future<void> _adicionarCategoria(TextEditingController controller, StateSetter setDialogState) async {
+    if (controller.text.trim().isNotEmpty) {
+      try {
+        await _controller.adicionarCategoria(controller.text.trim());
+        controller.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Categoria adicionada com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Confirmar exclusão da categoria com contagem de produtos
+  Future<void> _confirmarExcluirCategoria(Categoria categoria, StateSetter setDialogState) async {
+    try {
+      // Aqui você pode adicionar a contagem de produtos se tiver essa função no controller
+      // int quantidadeProdutos = await _controller.contarProdutosPorCategoria(categoria.nome);
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: Cores.cardBlack,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Text('Confirmar Exclusão', style: TextStyle(color: Cores.textWhite)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Tem certeza que deseja excluir a categoria "${categoria.nome}"?',
+                style: TextStyle(color: Cores.textWhite),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Todos os produtos desta categoria serão movidos para "Outros".',
+                style: TextStyle(color: Cores.textGray, fontSize: 14),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                try {
+                  await _controller.deletarCategoria(categoria.uid);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Categoria excluída! Produtos movidos para "Outros".'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erro: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: Text('Excluir',style: TextStyle(color: Cores.textWhite),),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Modal MELHORADO para editar categoria
+  void _mostrarDialogEditarCategoria(Categoria categoria, StateSetter setDialogState) {
     final nomeController = TextEditingController(text: categoria.nome);
 
     showDialog(
@@ -330,26 +488,40 @@ class _TelaCardapioState extends State<TelaCardapio> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Cores.cardBlack,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Text('Editar Categoria', style: TextStyle(color: Cores.textWhite)),
-          content: TextField(
-            controller: nomeController,
-            style: TextStyle(color: Cores.textWhite),
-            decoration: InputDecoration(labelText: 'Novo Nome', labelStyle: TextStyle(color: Cores.textGray)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nomeController,
+                style: TextStyle(color: Cores.textWhite),
+                decoration: InputDecoration(
+                  labelText: 'Nome da Categoria',
+                  labelStyle: TextStyle(color: Cores.textGray),
+                  filled: true,
+                  fillColor: Cores.backgroundBlack,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Cores.borderGray),
+                  ),
+                ),
+                onSubmitted: (_) => _salvarEdicaoCategoria(categoria, nomeController.text.trim()),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Todos os produtos desta categoria serão atualizados automaticamente.',
+                style: TextStyle(color: Cores.textGray, fontSize: 12),
+              ),
+            ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar')),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
             ElevatedButton(
-              onPressed: () async {
-                if (nomeController.text.isNotEmpty) {
-                  try {
-                    await _controller.atualizarCategoria(categoria.uid, nomeController.text);
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Categoria atualizada!')));
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: ${e.toString()}')));
-                  }
-                }
-              },
+              onPressed: () => _salvarEdicaoCategoria(categoria, nomeController.text.trim()),
               child: Text('Salvar'),
               style: ElevatedButton.styleFrom(backgroundColor: Cores.primaryRed),
             ),
@@ -359,12 +531,37 @@ class _TelaCardapioState extends State<TelaCardapio> {
     );
   }
 
+  // Função para salvar edição da categoria
+  Future<void> _salvarEdicaoCategoria(Categoria categoria, String novoNome) async {
+    if (novoNome.isNotEmpty && novoNome != categoria.nome) {
+      try {
+        await _controller.atualizarCategoria(categoria.uid, novoNome);
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Categoria atualizada! Produtos sincronizados.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Cores.backgroundBlack,
     body: Row(
       children: [
-        Barralateral(currentRoute: '/cardapio'), // Certifique-se que o import e a classe existem
+        Barralateral(currentRoute: '/cardapio'),
         Expanded(
           child: SingleChildScrollView(
             padding: EdgeInsets.all(24),
@@ -396,7 +593,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
                     ),
                     SizedBox(width: 16),
 
-                    // Filtro por categoria (usa _categoriasDisponiveis)
+                    // Filtro por categoria
                     DropdownButton<String>(
                       value: _categoriaFiltro ?? 'Todos',
                       dropdownColor: Cores.cardBlack,
@@ -408,13 +605,13 @@ class _TelaCardapioState extends State<TelaCardapio> {
                     ),
                     SizedBox(width: 16),
 
-                    // Novo botão para gerenciar categorias
+                    // Botão gerenciar categorias
                     ElevatedButton.icon(
                       onPressed: _mostrarDialogGerenciarCategorias,
-                      icon: Icon(Icons.folder),
-                      label: Text('Gerenciar Categorias'),
+                      icon: Icon(Icons.folder,color: Cores.textWhite,),
+                      label: Text('Gerenciar Categorias', style: TextStyle(color: Cores.textWhite),),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Cores.lightRed,
+                        backgroundColor: Cores.primaryRed,
                         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                         textStyle: TextStyle(fontSize: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -425,8 +622,8 @@ class _TelaCardapioState extends State<TelaCardapio> {
                     // Botão adicionar item
                     ElevatedButton.icon(
                       onPressed: _mostrarDialogAdicionarItem,
-                      icon: Icon(Icons.add),
-                      label: Text('Adicionar Item'),
+                      icon: Icon(Icons.add,color: Cores.textWhite,),
+                      label: Text('Adicionar Item', style: TextStyle(color: Cores.textWhite),),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Cores.primaryRed,
                         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -480,7 +677,7 @@ class _TelaCardapioState extends State<TelaCardapio> {
 
                         final Map<String, List<Cardapio>> agrupadoPorCategoria = {};
                         for (var item in filtrados) {
-                          agrupadoPorCategoria.setdefault(item.categoria, []).add(item);
+                          agrupadoPorCategoria.putIfAbsent(item.categoria, () => []).add(item);
                         }
 
                         return Column(
@@ -495,7 +692,6 @@ class _TelaCardapioState extends State<TelaCardapio> {
 
                                 LayoutBuilder(
                                   builder: (context, constraints) {
-                                    // Ajusta o número de colunas baseado na largura da tela
                                     int columns = constraints.maxWidth > 1200
                                         ? 3
                                         : constraints.maxWidth > 700
@@ -529,12 +725,21 @@ class _TelaCardapioState extends State<TelaCardapio> {
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.end,
                                                 children: [
-                                                  IconButton(icon: Icon(Icons.edit, color: Cores.lightRed), onPressed: () => _mostrarDialogEditarItem(cardapio)),
+                                                  IconButton(
+                                                    icon: Icon(Icons.edit, color: Cores.lightRed),
+                                                    onPressed: () => _mostrarDialogEditarItem(cardapio),
+                                                    tooltip: 'Editar item',
+                                                  ),
                                                   IconButton(
                                                     icon: Icon(cardapio.ativo ? Icons.block : Icons.check_circle, color: Colors.amber),
                                                     onPressed: () => _alternarSuspensao(cardapio),
+                                                    tooltip: cardapio.ativo ? 'Suspender item' : 'Reativar item',
                                                   ),
-                                                  IconButton(icon: Icon(Icons.delete, color: Colors.red), onPressed: () => _mostrarDialogExcluirItem(cardapio.uid)),
+                                                  IconButton(
+                                                    icon: Icon(Icons.delete, color: Colors.red),
+                                                    onPressed: () => _mostrarDialogExcluirItem(cardapio.uid),
+                                                    tooltip: 'Excluir item',
+                                                  ),
                                                 ],
                                               ),
                                             ],

@@ -103,7 +103,7 @@ class CardapioController {
     }
 
     try {
-      await _cardapioFirebase.suspenderCardapio(userId, cardapioUid, !suspender); // Corrigido: 'suspender' deve ser o novo estado (ativo ou inativo)
+      await _cardapioFirebase.suspenderCardapio(userId, cardapioUid, suspender); // Corrigido: 'suspender' deve ser o novo estado (ativo ou inativo)
       return suspender
           ? 'Cardápio suspenso com sucesso'
           : 'Cardápio reativado com sucesso';
