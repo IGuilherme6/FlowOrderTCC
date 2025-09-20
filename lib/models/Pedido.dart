@@ -37,6 +37,8 @@ class Pedido {
     return itens.fold<double>(0, (total, item) => total + (item.preco * item.quantidade));
   }
 
+  double get total => calcularTotal();
+
   // Converte o pedido para Map para salvar no Firebase
   Map<String, dynamic> toMap() {
     return {
