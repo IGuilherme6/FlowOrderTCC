@@ -237,6 +237,32 @@ class _TelaPedidosState extends State<TelaPedidos> {
           selectedColor: Cores.primaryRed,
           onSelected: (value) async {
             if (!selected) {
+              // Se o status for "Cancelado", mostra diálogo de confirmação
+              if (status == 'Cancelado') {
+                final confirmar = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: Text("Cancelar Pedido"),
+                    content: Text(
+                        "Tem certeza que deseja Cancelar este pedido da mesa ${pedido.mesa.numero}?"),
+                    actions: [
+                      TextButton(
+                        child: Text("Sair"),
+                        onPressed: () => Navigator.pop(context, false),
+                      ),
+                      ElevatedButton(
+                        child: Text("Cancelar Pedido"),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                        onPressed: () => Navigator.pop(context, true),
+                      ),
+                    ],
+                  ),
+                );
+
+                // Se não confirmou, não faz nada
+                if (confirmar != true) return;
+              }
+
               final sucesso = await _pedidoController.mudarStatusPedido(pedido.uid!, status);
               if (sucesso) {
                 ScaffoldMessenger.of(context).showSnackBar(

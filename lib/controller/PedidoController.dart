@@ -79,8 +79,6 @@ class PedidoController {
     return _pedidoFirebase.ouvirPedidosTempoReal(gerenteUid);
   }
 
-
-  /// Processa o pagamento de um pedido
   /// Processa o pagamento de um pedido
   Future<bool> processarPagamento({
     required String pedidoUid,
