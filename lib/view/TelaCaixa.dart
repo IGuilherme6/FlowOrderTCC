@@ -10,6 +10,7 @@ import '../models/Mesa.dart';
 import '../models/Cardapio.dart';
 import '../models/ItemCardapio.dart';
 import 'BarraLateral.dart';
+import 'package:flutter/gestures.dart';
 
 /// ===================================
 /// TELA PRINCIPAL DO CAIXA
@@ -728,45 +729,57 @@ class _AdicionarPedidoDialogState extends State<AdicionarPedidoDialog>
                               SizedBox(height: 12),
                               Container(
                                 height: 60,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: mesas.length,
-                                  itemBuilder: (context, index) {
-                                    final mesa = mesas[index];
-                                    final selected = mesaSelecionada?.uid == mesa.uid;
-                                    return Container(
-                                      margin: EdgeInsets.only(right: 8),
-                                      child: GestureDetector(
-                                        onTap: () => setState(() => mesaSelecionada = mesa),
-                                        child: AnimatedContainer(
-                                          duration: Duration(milliseconds: 200),
-                                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                                          decoration: BoxDecoration(
-                                            color: selected ? Cores.primaryRed : Cores.cardBlack,
-                                            borderRadius: BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: selected ? Cores.primaryRed : Cores.borderGray,
-                                              width: 2,
-                                            ),
-                                            boxShadow: selected ? [
-                                              BoxShadow(
-                                                color: Cores.primaryRed.withOpacity(0.3),
-                                                blurRadius: 8,
-                                                offset: Offset(0, 4),
+                                child: Scrollbar(
+                                  thumbVisibility: true,
+                                  child: ScrollConfiguration(
+                                    behavior: ScrollConfiguration.of(context).copyWith(
+                                      dragDevices: {
+                                        PointerDeviceKind.touch,
+                                        PointerDeviceKind.mouse,
+                                      },
+                                      scrollbars: true,
+                                    ),
+                                    child: ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: mesas.length,
+                                      itemBuilder: (context, index) {
+                                        final mesa = mesas[index];
+                                        final selected = mesaSelecionada?.uid == mesa.uid;
+                                        return Container(
+                                          margin: EdgeInsets.only(right: 8),
+                                          child: GestureDetector(
+                                            onTap: () => setState(() => mesaSelecionada = mesa),
+                                            child: AnimatedContainer(
+                                              duration: Duration(milliseconds: 200),
+                                              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                              decoration: BoxDecoration(
+                                                color: selected ? Cores.primaryRed : Cores.cardBlack,
+                                                borderRadius: BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: selected ? Cores.primaryRed : Cores.borderGray,
+                                                  width: 2,
+                                                ),
+                                                boxShadow: selected ? [
+                                                  BoxShadow(
+                                                    color: Cores.primaryRed.withOpacity(0.3),
+                                                    blurRadius: 8,
+                                                    offset: Offset(0, 4),
+                                                  ),
+                                                ] : [],
                                               ),
-                                            ] : [],
-                                          ),
-                                          child: Text(
-                                            "Mesa ${mesa.numero}",
-                                            style: TextStyle(
-                                              color: selected ? Colors.white : Cores.textWhite,
-                                              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                                              child: Text(
+                                                "Mesa ${mesa.numero}",
+                                                style: TextStyle(
+                                                  color: selected ? Colors.white : Cores.textWhite,
+                                                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ),
-                                    );
-                                  },
+                                        );
+                                      },
+                                    ),
+                                  ),
                                 ),
                               ),
 
