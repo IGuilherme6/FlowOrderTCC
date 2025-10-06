@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../firebase/LoginFirebase.dart';
+import '../models/GlobalUser.dart';
+import '../models/UserPermissions.dart';
 
 class Tela_Login extends StatefulWidget {
   @override
@@ -33,21 +35,16 @@ class _telalogin extends State<Tela_Login> {
       LoginFirebase loginFirebase = LoginFirebase();
 
       if (loginFirebase.isLoggedIn()) {
-        Navigator.pushReplacementNamed(context, '/home');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Usuário já está logado'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        // ⭐ CARREGAR DADOS GLOBAIS
+        await globalUser.loadUserData();
 
-        Navigator.pushReplacementNamed(context, '/home');
+        // ⭐ REDIRECIONAR PARA TELA PADRÃO
+        final defaultRoute = UserPermissions.getDefaultRoute(globalUser.userType);
+
+        Navigator.pushReplacementNamed(context, defaultRoute);
       }
     } catch (e) {
-      SnackBar(
-        content: Text('Erro ao verificar status de autenticação: $e'),
-        backgroundColor: Colors.green,
-      );
+      print('Erro ao verificar status de autenticação: $e');
     }
 
     setState(() {
@@ -90,6 +87,12 @@ class _telalogin extends State<Tela_Login> {
       );
 
       if (resultadoLogin == 'success') {
+        // ⭐ CARREGAR DADOS GLOBAIS
+        await globalUser.loadUserData();
+
+        // ⭐ REDIRECIONAR PARA TELA PADRÃO
+        final defaultRoute = UserPermissions.getDefaultRoute(globalUser.userType);
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Login realizado com sucesso!'),
@@ -97,7 +100,7 @@ class _telalogin extends State<Tela_Login> {
           ),
         );
 
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, defaultRoute);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(resultadoLogin), backgroundColor: Colors.red),

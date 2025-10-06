@@ -4,6 +4,7 @@ import 'package:floworder/view/BarraLateral.dart';
 import 'package:flutter/services.dart';
 import '../auxiliar/Cores.dart';
 import '../models/Mesa.dart';
+import '../models/GlobalUser.dart';
 
 class TelaMesa extends StatefulWidget {
   @override

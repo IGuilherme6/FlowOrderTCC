@@ -10,7 +10,10 @@ import 'package:floworder/view/TelaPedidos.dart';
 import 'package:floworder/view/TelaRelatorios.dart';
 import 'package:floworder/view/Tela_CadastroUsuario.dart';
 
+
 import '../auxiliar/Cores.dart';
+import '../models/GlobalUser.dart';
+import '../models/UserPermissions.dart';
 import 'TelaMesa.dart';
 
 class Barralateral extends StatelessWidget {
@@ -20,11 +23,15 @@ class Barralateral extends StatelessWidget {
 
   Future<void> logout() async {
     LoginFirebase loginFirebase = LoginFirebase();
-    loginFirebase.logout();
+    await loginFirebase.logout();
+    globalUser.clearUserData(); // Limpar dados globais
   }
 
   @override
   Widget build(BuildContext context) {
+    // Obter rotas permitidas para o tipo de usuário GLOBAL
+    final allowedRoutes = UserPermissions.getAllowedRoutes(globalUser.userType);
+
     return Container(
       width: 250,
       height: double.infinity,
@@ -56,73 +63,75 @@ class Barralateral extends StatelessWidget {
                     width: double.infinity,
                   ),
                 ),
+                SizedBox(height: 10),
+                // Mostrar tipo de usuário GLOBAL
+                if (globalUser.userType != null)
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Cores.textGray,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      globalUser.userType!,
+                      style: TextStyle(
+                        color: Cores.darkRed,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                // Mostrar nome do usuário GLOBAL
+                if (globalUser.userName != null)
+                  Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      globalUser.userName!,
+                      style: TextStyle(
+                        color: Cores.textWhite,
+                        fontSize: 11,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
               ],
             ),
           ),
           const SizedBox(height: 40),
-          // Menu Items
+          // Menu Items - Apenas itens permitidos
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(0),
               children: [
-                _buildMenuItem(
-                  context: context,
-                  icon: Icons.dashboard,
-                  title: 'Dashboard',
-                  route: '/dashboard',
-                ),
-                const SizedBox(height: 20),
-                _buildMenuItem(
-                  context: context,
-                  icon: Icons.point_of_sale,
-                  title: 'Caixa',
-                  route: '/caixa',
-                ),
-                const SizedBox(height: 20),
-                _buildMenuItem(
-                  context: context,
-                  icon: Icons.fact_check_outlined,
-                  title: 'Pedidos',
-                  route: '/pedidos',
-                ),
-                const SizedBox(height: 20),
-                _buildMenuItem(
-                  context: context,
-                  icon: Icons.menu_book,
-                  title: 'Cardápio',
-                  route: '/cardapio',
-                ),
-                const SizedBox(height: 20),
-                _buildMenuItem(
-                  context: context,
-                  icon: Icons.table_bar,
-                  title: 'Mesas',
-                  route: '/mesas',
-                ),
-                const SizedBox(height: 20),
-                _buildMenuItem(
-                  context: context,
-                  icon: Icons.person,
-                  title: 'Funcionários',
-                  route: '/funcionarios',
-                ),
-                const SizedBox(height: 20),
-                _buildMenuItem(
-                  context: context,
-                  icon: Icons.analytics,
-                  title: 'Relatórios',
-                  route: '/relatorios',
-                ),
+                // Gerar menu items dinamicamente baseado nas permissões
+                ...allowedRoutes.map((route) {
+                  final menuData = UserPermissions.menuInfo[route];
+                  if (menuData == null) return SizedBox.shrink();
+
+                  return Column(
+                    children: [
+                      _buildMenuItem(
+                        context: context,
+                        icon: menuData['icon'] as IconData,
+                        title: menuData['title'] as String,
+                        route: route,
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                  );
+                }).toList(),
               ],
             ),
           ),
+          // Botão de logout
           Container(
-            //botão de sair
             margin: const EdgeInsets.all(8),
             child: ListTile(
               leading: Icon(Icons.logout, color: Cores.textGray, size: 20),
               title: Text(
-                'Deslogar/Logout',
+                'Deslogar',
                 style: TextStyle(
                   color: Cores.textGray,
                   fontSize: 16,
@@ -130,8 +139,8 @@ class Barralateral extends StatelessWidget {
                 ),
               ),
               onTap: () async {
-                Navigator.pushReplacementNamed(context, '/telalogin');
                 await logout();
+                Navigator.pushReplacementNamed(context, '/telalogin');
               },
               dense: true,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16),
@@ -145,6 +154,19 @@ class Barralateral extends StatelessWidget {
 
   /// Função que faz a navegação com transição fade
   void navigateWithFade(BuildContext context, String routeName) {
+    // Verificar se o usuário tem permissão para acessar a rota (usando variável global)
+    if (!UserPermissions.hasAccess(globalUser.userType, routeName) && routeName != '/home') {
+      // Mostrar mensagem de acesso negado
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Você não tem permissão para acessar esta página'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     if (ModalRoute.of(context)?.settings.name == routeName) {
       return;
     }

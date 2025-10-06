@@ -11,6 +11,7 @@ import '../models/Cardapio.dart';
 import '../models/ItemCardapio.dart';
 import 'BarraLateral.dart';
 import 'package:flutter/gestures.dart';
+import '../models/GlobalUser.dart';
 
 /// ===================================
 /// TELA PRINCIPAL DO CAIXA
