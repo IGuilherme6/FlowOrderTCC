@@ -6,7 +6,7 @@ import 'package:printing/printing.dart';
 import 'package:floworder/view/BarraLateral.dart';
 import 'package:floworder/auxiliar/Cores.dart';
 import 'package:floworder/models/Pedido.dart';
-
+import '../models/GlobalUser.dart';
 import '../firebase/RelatorioService.dart';
 import '../firebase/UsuarioFirebase.dart';
 

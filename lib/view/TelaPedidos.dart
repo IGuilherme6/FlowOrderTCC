@@ -3,6 +3,7 @@ import 'package:floworder/controller/PedidoController.dart';
 import 'package:floworder/models/Pedido.dart';
 import '../auxiliar/Cores.dart';
 import 'BarraLateral.dart';
+import '../models/GlobalUser.dart';
 
 class TelaPedidos extends StatefulWidget {
   @override

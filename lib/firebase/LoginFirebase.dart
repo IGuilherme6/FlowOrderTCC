@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:floworder/auxiliar/Validador.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginFirebase {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -9,6 +10,7 @@ class LoginFirebase {
   Future<String> login(String email, String password) async {
     try {
       await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+
       // Validações básicas
       if (email.isEmpty) {
         return 'Email não pode estar vazio';
@@ -30,16 +32,60 @@ class LoginFirebase {
 
       // Verifica se o usuário foi autenticado
       if (result.user != null) {
+        // Busca os dados do usuário no Firestore
+        var userDoc = await FirebaseFirestore.instance
+            .collection('Usuarios') // ajuste o nome da collection conforme seu projeto
+            .doc(result.user!.uid)
+            .get();
+
+        // Verifica se o documento existe
+        if (!userDoc.exists) {
+          await _auth.signOut(); // Faz logout
+          return 'Usuário não encontrado no sistema';
+        }
+
+        // Obtém os dados do documento
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+
+        // Verifica se a conta está ativa
+        bool ativo = userData['ativo'] ?? false;
+        if (!ativo) {
+          await _auth.signOut(); // Faz logout
+          return 'Conta desativada. Entre em contato com o administrador';
+        }
+
+        // Verifica o cargo do usuário
+        String cargo = userData['cargo'] ?? '';
+
+        // Garçom não pode fazer login
+        if (cargo.toLowerCase() == 'garçom') {
+          await _auth.signOut(); // Faz logout
+          return 'Garçons não têm permissão para acessar o sistema';
+        }
+
+        // Valida se o cargo é válido
+        List<String> cargosPermitidos = ['gerente', 'atendente', 'cozinheiro'];
+        if (!cargosPermitidos.contains(cargo.toLowerCase())) {
+          await _auth.signOut(); // Faz logout
+          return 'Cargo não autorizado para acesso ao sistema';
+        }
+
+        // Aqui você pode salvar o cargo em algum gerenciador de estado
+        // para controlar o nível de acesso em outras partes do app
+        // Exemplo: await _salvarCargoLocalmente(cargo);
+
         return 'success'; // Login bem-sucedido
       } else {
         return 'Falha na autenticação';
       }
     } on FirebaseAuthException catch (e) {
-      // Tratamento específico dos erros do Firebase Auth
       return _handleFirebaseError(e.code);
     } catch (e) {
-      // Outros erros
-      return 'Erro desconhecido: ${e.toString()}';
+      // Se houver erro ao buscar dados do Firestore, faz logout preventivo
+      try {
+        await _auth.signOut();
+      } catch (_) {}
+      return 'Erro ao validar usuário: ${e.toString()}';
     }
   }
 

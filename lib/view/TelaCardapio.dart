@@ -3,7 +3,7 @@ import 'package:floworder/controller/CardapioController.dart';
 import 'package:floworder/models/Cardapio.dart';
 import 'package:floworder/view/BarraLateral.dart';
 import 'package:flutter/services.dart';
-
+import '../models/GlobalUser.dart';
 import '../auxiliar/Cores.dart'; // Certifique-se que este import está correto
 import '../models/Categoria.dart'; // Importe o modelo Categoria
 
