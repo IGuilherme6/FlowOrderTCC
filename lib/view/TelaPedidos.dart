@@ -14,6 +14,9 @@ class _TelaPedidosState extends State<TelaPedidos> {
   final PedidoController _pedidoController = PedidoController();
   Future<Stream<List<Pedido>>>? _pedidosFuture;
 
+  // Variável de estado para controlar visibilidade da senha
+  bool _obscureSenhaGerente = true;
+
   @override
   void initState() {
     super.initState();
@@ -169,29 +172,29 @@ class _TelaPedidosState extends State<TelaPedidos> {
             ),
           ),
           if (pedido.observacao != null && pedido.observacao!.isNotEmpty)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Cores.primaryRed.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Cores.primaryRed.withOpacity(0.3)),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Cores.primaryRed.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Cores.primaryRed.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Observação do Pedido:',
+                      style: TextStyle(
+                          color: Cores.primaryRed,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(pedido.observacao!,
+                      style: TextStyle(color: Cores.textWhite, fontSize: 13)),
+                ],
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Observação do Pedido:',
-                    style: TextStyle(
-                        color: Cores.primaryRed,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text(pedido.observacao!,
-                    style: TextStyle(color: Cores.textWhite, fontSize: 13)),
-              ],
-            ),
-          ),
           const SizedBox(height: 8),
           _buildStatusActions(pedido),
         ],
@@ -232,38 +235,99 @@ class _TelaPedidosState extends State<TelaPedidos> {
       spacing: 8,
       children: opcoes.map((status) {
         final selected = pedido.statusAtual == status;
+
+        // Permite cancelar de qualquer status, exceto se já estiver cancelado
+        final podeInteragir = !selected || (status == 'Cancelado' && !selected);
+
         return ChoiceChip(
           label: Text(status),
           selected: selected,
           selectedColor: Cores.primaryRed,
-          onSelected: (value) async {
+          onSelected: podeInteragir ? (value) async {
             if (!selected) {
-              // Se o status for "Cancelado", mostra diálogo de confirmação
+              // Se o status for "Cancelado", mostra diálogo com campo de texto
               if (status == 'Cancelado') {
+                final TextEditingController senhaGerenteController = TextEditingController();
+
                 final confirmar = await showDialog<bool>(
                   context: context,
-                  builder: (_) => AlertDialog(
-                    title: Text("Cancelar Pedido"),
-                    content: Text(
-                        "Tem certeza que deseja Cancelar este pedido da mesa ${pedido.mesa.numero}?"),
-                    actions: [
-                      TextButton(
-                        child: Text("Sair"),
-                        onPressed: () => Navigator.pop(context, false),
+                  builder: (_) => StatefulBuilder(
+                    builder: (context, setStateDialog) => AlertDialog(
+                      backgroundColor: Cores.cardBlack,
+                      title: Text(
+                        "Cancelar Pedido",
+                        style: TextStyle(color: Cores.textWhite),
                       ),
-                      ElevatedButton(
-                        child: Text("Cancelar Pedido"),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                        onPressed: () => Navigator.pop(context, true),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Tem certeza que deseja cancelar este pedido da mesa ${pedido.mesa.numero}?",
+                            style: TextStyle(fontSize: 14, color: Cores.textGray),
+                          ),
+                          SizedBox(height: 16),
+                          _buildInputField(
+                            controller: senhaGerenteController,
+                            label: "Senha do Gerente",
+                            icon: Icons.password,
+                            obscureText: _obscureSenhaGerente,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureSenhaGerente ? Icons.visibility : Icons.visibility_off,
+                                color: Colors.red,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscureSenhaGerente = !_obscureSenhaGerente;
+                                });
+                                setStateDialog(() {});
+                              },
+                            ),
+                          )
+                        ],
                       ),
-                    ],
+                      actions: [
+                        TextButton(
+                          child: Text("Voltar", style: TextStyle(color: Cores.textGray)),
+                          onPressed: () {
+                            senhaGerenteController.dispose();
+                            Navigator.pop(context, false);
+                          },
+                        ),
+                        ElevatedButton(
+                          child: Text("Confirmar Cancelamento"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context, true);
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 );
 
                 // Se não confirmou, não faz nada
-                if (confirmar != true) return;
+                if (confirmar != true) {
+                  senhaGerenteController.dispose();
+                  return;
+                }
+
+                final res = await _pedidoController.confirmarSenhaCancelar(pedido, senhaGerenteController.text);
+                senhaGerenteController.dispose();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(res),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
               }
 
+              // Para outros status, apenas atualiza normalmente
               final sucesso = await _pedidoController.mudarStatusPedido(pedido.uid!, status);
               if (sucesso) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -282,7 +346,7 @@ class _TelaPedidosState extends State<TelaPedidos> {
                 );
               }
             }
-          },
+          } : null, // Desabilita se não puder interagir
         );
       }).toList(),
     );
@@ -290,5 +354,44 @@ class _TelaPedidosState extends State<TelaPedidos> {
 
   String _formatarHorario(DateTime horario) {
     return '${horario.hour.toString().padLeft(2, '0')}:${horario.minute.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+    Widget? suffixIcon,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[850],
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.red.withOpacity(0.3), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withOpacity(0.1),
+            blurRadius: 5,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        controller: controller,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        style: TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: Colors.white70),
+          prefixIcon: Icon(icon, color: Colors.red),
+          suffixIcon: suffixIcon,
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          floatingLabelStyle: TextStyle(color: Colors.red),
+        ),
+      ),
+    );
   }
 }

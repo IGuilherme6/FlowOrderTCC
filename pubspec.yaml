@@ -49,6 +49,7 @@ dependencies:
   fl_chart: ^1.1.0
   pdf: ^3.10.4
   printing: ^5.11.0
+  cloud_functions: ^6.0.2
 
 dev_dependencies:
   flutter_test:
