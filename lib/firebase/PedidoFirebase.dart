@@ -1,9 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:floworder/firebase/UsuarioFirebase.dart';
 import '../models/Pedido.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PedidoFirebase {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   CollectionReference get _pedidosRef => _firestore.collection('Pedidos');
 
@@ -36,6 +40,48 @@ class PedidoFirebase {
           .update({'statusAtual': 'Cancelado'});
     } catch (e) {
       throw Exception('Erro ao excluir pedido: $e');
+    }
+  }
+
+
+  Future<bool> verificarSenhaGerente(String gerenteUid, String senha) async {
+    try {
+      print('🔍 Buscando email do gerente...');
+
+      final gerenteDoc = await _firestore.collection('Usuarios').doc(gerenteUid).get();
+
+      if (!gerenteDoc.exists) {
+        print('❌ Gerente não encontrado');
+        return false;
+      }
+
+      final email = gerenteDoc.data()?['email'] as String?;
+      if (email == null || email.isEmpty) {
+        print('❌ Email não encontrado');
+        return false;
+      }
+
+      print('📧 Email: $email');
+      print('🔐 Senha: ${senha.isNotEmpty ? senha : "VAZIA"}');
+      print('🌐 Chamando Cloud Function...');
+
+      final callable = _functions.httpsCallable('verifyManagerPassword');
+
+      final result = await callable({
+        'email': email,
+        'password': senha,
+      });
+
+      final data = Map<String, dynamic>.from(result.data);
+      print('📦 Resposta recebida: $data');
+
+      return data['success'] == true;
+    } on FirebaseFunctionsException catch (e) {
+      print('⚠️ Erro FirebaseFunctionsException: ${e.code} - ${e.message}');
+      return false;
+    } catch (e) {
+      print('❌ ERRO COMPLETO: $e');
+      return false;
     }
   }
 

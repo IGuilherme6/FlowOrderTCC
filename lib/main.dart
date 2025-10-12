@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:floworder/view/TelaCaixa.dart';
 import 'package:floworder/view/TelaCardapio.dart';
 import 'package:floworder/view/TelaDashboard.dart';
@@ -16,6 +17,7 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
   runApp(MyApp());
 }
 

@@ -145,6 +145,20 @@ class PedidoController {
     }
   }
 
+  Future<String> confirmarSenhaCancelar(Pedido pedido, String senha) async {
+    final uid = _user.pegarIdUsuarioLogado();
+    final gerenteUid = await _user.pegarGerenteUid(uid!); // AWAIT aqui
+
+    final res = await _pedidoFirebase.verificarSenhaGerente(gerenteUid!, senha); // AWAIT aqui
+
+    if (res) {
+      await excluirPedido(pedido); // AWAIT aqui também
+      return 'Pedido Cancelado';
+    } else {
+      return 'Senha incorreta. O pedido não foi cancelado.';
+    }
+  }
+
 
   Future<bool> editarPedido(Pedido pedido) async {
     if (pedido.statusAtual != "Aberto") {
@@ -181,10 +195,6 @@ class PedidoController {
   Future<bool> excluirPedido(Pedido pedido) async {
     if (pedido.uid == null) {
       throw Exception("Pedido inválido para exclusão.");
-    }
-
-    if (pedido.statusAtual != "Aberto") {
-      throw Exception("Só é possível excluir pedidos com status 'Aberto'.");
     }
 
     try {
