@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../firebase/LoginFirebase.dart';
 import '../models/GlobalUser.dart';
 import '../models/UserPermissions.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Tela_Login extends StatefulWidget {
   @override
@@ -35,11 +37,25 @@ class _telalogin extends State<Tela_Login> {
       LoginFirebase loginFirebase = LoginFirebase();
 
       if (loginFirebase.isLoggedIn()) {
-        // ⭐ CARREGAR DADOS GLOBAIS
-        await globalUser.loadUserData();
+        // ✅ Carrega do localStorage / SharedPreferences
+        await globalUser.loadFromLocalStorage();
 
-        // ⭐ REDIRECIONAR PARA TELA PADRÃO
-        final defaultRoute = UserPermissions.getDefaultRoute(globalUser.userType);
+        // ✅ Se não houver dados salvos, carregar do Firebase
+        if (globalUser.userId == null) {
+          final uid = FirebaseAuth.instance.currentUser!.uid;
+          final doc = await FirebaseFirestore.instance
+              .collection('Usuarios')
+              .doc(uid)
+              .get();
+
+          if (doc.exists) {
+            await globalUser.loadUserDataFromFirebase(uid, doc.data()!);
+          }
+        }
+
+        // ✅ Rota padrão baseada no cargo carregado
+        final defaultRoute =
+        UserPermissions.getDefaultRoute(globalUser.userType);
 
         Navigator.pushReplacementNamed(context, defaultRoute);
       }
@@ -51,6 +67,7 @@ class _telalogin extends State<Tela_Login> {
       _isCheckingAuth = false;
     });
   }
+
 
   Future<void> _MudarSenha(String email) async {
     try {
@@ -87,18 +104,22 @@ class _telalogin extends State<Tela_Login> {
       );
 
       if (resultadoLogin == 'success') {
-        // ⭐ CARREGAR DADOS GLOBAIS
-        await globalUser.loadUserData();
+        final uid = FirebaseAuth.instance.currentUser!.uid;
 
-        // ⭐ REDIRECIONAR PARA TELA PADRÃO
-        final defaultRoute = UserPermissions.getDefaultRoute(globalUser.userType);
+        final userDoc = await FirebaseFirestore.instance
+            .collection('Usuarios')
+            .doc(uid)
+            .get();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login realizado com sucesso!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (userDoc.exists) {
+          await globalUser.loadUserDataFromFirebase(
+            uid,
+            userDoc.data()!,
+          );
+        }
+
+        final defaultRoute =
+        UserPermissions.getDefaultRoute(globalUser.userType);
 
         Navigator.pushReplacementNamed(context, defaultRoute);
       } else {
