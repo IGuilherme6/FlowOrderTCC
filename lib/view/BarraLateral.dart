@@ -9,6 +9,7 @@ import 'package:floworder/view/TelaDashboard.dart';
 import 'package:floworder/view/TelaPedidos.dart';
 import 'package:floworder/view/TelaRelatorios.dart';
 import 'package:floworder/view/Tela_CadastroUsuario.dart';
+import 'package:provider/provider.dart';
 
 
 import '../auxiliar/Cores.dart';
@@ -30,7 +31,18 @@ class Barralateral extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Obter rotas permitidas para o tipo de usuário GLOBAL
-    final allowedRoutes = UserPermissions.getAllowedRoutes(globalUser.userType);
+    final allowedRoutes = UserPermissions.getAllowedRoutes(context.watch<GlobalUser>().userType);
+    // ✅ Se ainda não carregou os dados do usuário, não monta a barra
+    if (context.watch<GlobalUser>().userType == null || globalUser.userName == null) {
+      return Container(
+        width: 250,
+        color: Colors.black,
+        child: Center(
+          child: CircularProgressIndicator(color: Colors.red),
+        ),
+      );
+    }
+
 
     return Container(
       width: 250,

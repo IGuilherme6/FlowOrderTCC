@@ -1,5 +1,7 @@
 import 'package:floworder/auxiliar/Cores.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/GlobalUser.dart';
 import 'BarraLateral.dart';
 
 class TelaHome extends StatefulWidget {
@@ -10,6 +12,18 @@ class TelaHome extends StatefulWidget {
 class _TelaHome extends State<TelaHome> {
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<GlobalUser>();
+
+    if (user.userType == null) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.red),
+        ),
+      );
+    }
+
+
     return Scaffold(
       backgroundColor: Cores.backgroundBlack,
       body: Row(
@@ -26,7 +40,10 @@ class _TelaHome extends State<TelaHome> {
                       'logo/Icone_FlowOrder.png',
                       fit: BoxFit.contain,
                       width:
-                          MediaQuery.of(context).size.width *
+                      MediaQuery
+                          .of(context)
+                          .size
+                          .width *
                           0.4, // 40% da largura
                     ),
                   ),
@@ -48,3 +65,4 @@ class _TelaHome extends State<TelaHome> {
     );
   }
 }
+

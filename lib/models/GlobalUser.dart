@@ -1,73 +1,97 @@
-// lib/auxiliar/GlobalUser.dart
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:html' as html;
 
-class GlobalUser {
-  // Instância única (Singleton)
+class GlobalUser extends ChangeNotifier {
+  // Singleton
   static final GlobalUser _instance = GlobalUser._internal();
   factory GlobalUser() => _instance;
   GlobalUser._internal();
 
-  // Variáveis globais que persistem
+  // Dados persistentes
+  String? userId;
+  String? userEmail;
   String? userType;
   String? userName;
-  String? userEmail;
-  String? userId;
 
-  // Carregar dados do usuário logado
-  Future<void> loadUserData() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
+  // Carregar dados do Firestore e salvar localmente
+  Future<void> loadUserDataFromFirebase(
+      String uid, Map<String, dynamic> userData) async {
+    userId = uid;
+    userEmail = userData['email'];
+    userType = userData['cargo'];
+    userName = userData['nome'];
 
-      if (user == null) {
-        clearUserData();
-        return;
-      }
+    await _saveToLocal();
+    notifyListeners();
+  }
 
-      userId = user.uid;
-      userEmail = user.email;
 
-      // Buscar tipo e nome do usuário no Firestore
-      final doc = await FirebaseFirestore.instance
-          .collection('Usuarios')
-          .doc(user.uid)
-          .get();
+  // Salvar dados no armazenamento local (Web ou Mobile)
+  Future<void> _saveToLocal() async {
+    final data = {
+      'userId': userId,
+      'userEmail': userEmail,
+      'userType': userType,
+      'userName': userName,
+    };
 
-      if (doc.exists) {
-        final data = doc.data();
-        userType = data?['cargo'] as String?;
-        userName = data?['nome'] as String?;
-      }
+    final json = jsonEncode(data);
 
-      print('✅ Usuário carregado: $userName ($userType)');
-    } catch (e) {
-      print('❌ Erro ao carregar dados do usuário: $e');
+    if (kIsWeb) {
+      html.window.localStorage['globalUser'] = json;
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setString('globalUser', json);
     }
   }
 
-  // Limpar dados ao fazer logout
-  void clearUserData() {
+  //Carregar dados salvos no armazenamento local na inicialização
+  Future<void> loadFromLocalStorage() async {
+    String? json;
+
+    if (kIsWeb) {
+      json = html.window.localStorage['globalUser'];
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      json = prefs.getString('globalUser');
+    }
+
+    if (json == null) return;
+
+    final data = jsonDecode(json);
+
+    userId = data['userId'];
+    userEmail = data['userEmail'];
+    userType = data['userType'];
+    userName = data['userName'];
+
+    notifyListeners();
+  }
+
+  //Limpar dados (logout)
+  Future<void> clearUserData() async {
+    userId = null;
+    userEmail = null;
     userType = null;
     userName = null;
-    userEmail = null;
-    userId = null;
-    print('🗑️ Dados do usuário limpos');
+
+    if (kIsWeb) {
+      html.window.localStorage.remove('globalUser');
+    } else {
+      final prefs = await SharedPreferences.getInstance();
+      prefs.remove('globalUser');
+    }
+
+    notifyListeners();
   }
 
   // Verificar se está logado
   bool get isLoggedIn => userId != null;
 
-  // Debug - mostrar dados
-  void printUserData() {
-    print('=== DADOS DO USUÁRIO ===');
-    print('ID: $userId');
-    print('Nome: $userName');
-    print('Email: $userEmail');
-    print('Tipo: $userType');
-    print('========================');
-  }
 }
 
-// Atalho global para acessar facilmente
+// Instância global
 final globalUser = GlobalUser();
