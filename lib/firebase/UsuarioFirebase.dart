@@ -12,7 +12,7 @@ class UsuarioFirebase {
     User? user = FirebaseAuth.instance.currentUser;
     return user?.uid;
   }
-
+  //pega uid do gerente na conta dos outros funcionarios
   Future<String?> pegarGerenteUid(String id) async {
     final doc = await _usuariosRef.doc(id).get();
     final userData = doc.data() as Map<String, dynamic>?;

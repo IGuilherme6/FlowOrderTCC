@@ -112,8 +112,6 @@ class CardapioController {
     }
   }
 
-  // --- Novos métodos para Categorias ---
-
   /// Stream de categorias do gerente (tempo real), combinando com as categorias padrão.
   Future<Stream<List<String>>> buscarCategoriasTempoReal() async {
     String? userId = await _cardapioFirebase.verificarGerenteUid();

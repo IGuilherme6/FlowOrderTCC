@@ -5,6 +5,7 @@ class UserPermissions {
   static const String ATENDENTE = 'Atendente';
   static const String COZINHEIRO = 'Cozinheiro';
 
+  ///seta as permissoes dos users
   static Map<String, List<String>> permissions = {
     GERENTE: [
       '/dashboard',

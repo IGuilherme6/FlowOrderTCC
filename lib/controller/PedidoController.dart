@@ -144,22 +144,22 @@ class PedidoController {
       return null;
     }
   }
-
+  //verifica se a senha para cancelar
   Future<String> confirmarSenhaCancelar(Pedido pedido, String senha) async {
     final uid = _user.pegarIdUsuarioLogado();
-    final gerenteUid = await _user.pegarGerenteUid(uid!); // AWAIT aqui
+    final gerenteUid = await _user.pegarGerenteUid(uid!);
 
-    final res = await _pedidoFirebase.verificarSenhaGerente(gerenteUid!, senha); // AWAIT aqui
+    final res = await _pedidoFirebase.verificarSenhaGerente(gerenteUid!, senha);
 
     if (res) {
-      await excluirPedido(pedido); // AWAIT aqui também
+      await excluirPedido(pedido);
       return 'Pedido Cancelado';
     } else {
       return 'Senha incorreta. O pedido não foi cancelado.';
     }
   }
 
-
+  //edita o pedido
   Future<bool> editarPedido(Pedido pedido) async {
     if (pedido.statusAtual != "Aberto") {
       throw Exception("Só é possível editar pedidos com status 'Aberto'.");
@@ -192,6 +192,7 @@ class PedidoController {
       return false;
     }
   }
+  //não vai excluir msm só colocar como cancelado
   Future<bool> excluirPedido(Pedido pedido) async {
     if (pedido.uid == null) {
       throw Exception("Pedido inválido para exclusão.");
@@ -205,7 +206,7 @@ class PedidoController {
       return false;
     }
   }
-
+  //muda o status do pedido ué
   Future<bool> mudarStatusPedido(String pedidoId, String novoStatus) async {
     try {
       await _pedidoFirebase.atualizarStatus(pedidoId, novoStatus);
@@ -217,34 +218,52 @@ class PedidoController {
   }
 
   Future<Map<String, dynamic>> gerarRelatorioDoDia() async {
+    // Pega a data atual
     final hoje = DateTime.now();
+
+    // Busca todos os pedidos feitos HOJE
     final pedidos = await _pedidoFirebase.buscarPedidosDoDia(hoje);
 
+    // Variáveis de resultado
     double totalVendas = 0.0;
     int qtdPedidos = pedidos.length;
+
+    // Guarda quantos pedidos existem em cada status (Ex: Aberto, Pronto...)
     Map<String, int> statusCount = {};
+
+    // Armazena total vendido por método de pagamento
     Map<String, double> pagamentoPorMetodo = {
       'Dinheiro': 0,
       'Cartão': 0,
       'PIX': 0,
     };
 
+    // Processa cada pedido do dia
     for (var pedido in pedidos) {
+      // Soma ao total vendido
       totalVendas += pedido.calcularTotal();
 
-      // Contagem por status
-      statusCount[pedido.statusAtual] = (statusCount[pedido.statusAtual] ?? 0) + 1;
+      // Contagem de pedidos por status
+      statusCount[pedido.statusAtual] =
+          (statusCount[pedido.statusAtual] ?? 0) + 1;
 
-      // Agrupamento por pagamento
+      // Se o pedido foi pago, tenta buscar detalhes do pagamento
       if (pedido.pago) {
-        final detalhe = await _pedidoFirebase.buscarDetalhePagamento(pedido.uid!);
+        final detalhe =
+        await _pedidoFirebase.buscarDetalhePagamento(pedido.uid!);
+
         if (detalhe != null) {
+          // Método de pagamento usado
           final metodo = detalhe['metodoPagamento'] ?? 'Outro';
-          pagamentoPorMetodo[metodo] = (pagamentoPorMetodo[metodo] ?? 0) + pedido.calcularTotal();
+
+          // Soma no total do método correspondente
+          pagamentoPorMetodo[metodo] =
+              (pagamentoPorMetodo[metodo] ?? 0) + pedido.calcularTotal();
         }
       }
     }
 
+    // Retorna o relatório completo
     return {
       'totalVendas': totalVendas,
       'qtdPedidos': qtdPedidos,
@@ -259,13 +278,10 @@ class PedidoController {
     DateTime fim;
 
     if (semanal) {
-      // Aqui usamos "últimos 7 dias" (inclui hoje).
-      // Se preferir usar semana calendário (segunda->domingo), substitua esta lógica.
       final inicioDia = DateTime(agora.year, agora.month, agora.day);
-      inicio = inicioDia.subtract(Duration(days: 6)); // 6 dias atrás + hoje = 7 dias
+      inicio = inicioDia.subtract(Duration(days: 6));
       fim = DateTime(agora.year, agora.month, agora.day, 23, 59, 59);
     } else {
-      // Hoje 00:00:00 → 23:59:59
       inicio = DateTime(agora.year, agora.month, agora.day, 0, 0, 0);
       fim = DateTime(agora.year, agora.month, agora.day, 23, 59, 59);
     }

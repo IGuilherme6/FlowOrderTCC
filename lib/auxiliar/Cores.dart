@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 class Cores {
+  //cores do sistema
   static const Color primaryRed = Color(0xFFDC2626);
   static const Color darkRed = Color(0xFF991B1B);
   static const Color lightRed = Color(0xFFEF4444);

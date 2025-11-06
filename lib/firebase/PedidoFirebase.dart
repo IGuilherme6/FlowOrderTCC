@@ -43,7 +43,7 @@ class PedidoFirebase {
     }
   }
 
-
+  ///verifica a senha do gerente na function do firebase
   Future<bool> verificarSenhaGerente(String gerenteUid, String senha) async {
     try {
       print('🔍 Buscando email do gerente...');
