@@ -46,24 +46,22 @@ class PedidoFirebase {
   ///verifica a senha do gerente na function do firebase
   Future<bool> verificarSenhaGerente(String gerenteUid, String senha) async {
     try {
-      print('🔍 Buscando email do gerente...');
+
 
       final gerenteDoc = await _firestore.collection('Usuarios').doc(gerenteUid).get();
 
       if (!gerenteDoc.exists) {
-        print('❌ Gerente não encontrado');
+
         return false;
       }
 
       final email = gerenteDoc.data()?['email'] as String?;
       if (email == null || email.isEmpty) {
-        print('❌ Email não encontrado');
+
         return false;
       }
 
-      print('📧 Email: $email');
-      print('🔐 Senha: ${senha.isNotEmpty ? senha : "VAZIA"}');
-      print('🌐 Chamando Cloud Function...');
+
 
       final callable = _functions.httpsCallable('verifyManagerPassword');
 
@@ -73,14 +71,11 @@ class PedidoFirebase {
       });
 
       final data = Map<String, dynamic>.from(result.data);
-      print('📦 Resposta recebida: $data');
 
       return data['success'] == true;
     } on FirebaseFunctionsException catch (e) {
-      print('⚠️ Erro FirebaseFunctionsException: ${e.code} - ${e.message}');
       return false;
     } catch (e) {
-      print('❌ ERRO COMPLETO: $e');
       return false;
     }
   }
