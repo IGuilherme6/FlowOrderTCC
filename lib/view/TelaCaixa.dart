@@ -26,6 +26,7 @@ class _TelaCaixaState extends State<TelaCaixa> {
   String _filtroStatus = 'Todos';
   Future<Stream<List<Pedido>>>? _pedidosFuture;
 
+
   @override
   void initState() {
     super.initState();
@@ -378,51 +379,112 @@ class _TelaCaixaState extends State<TelaCaixa> {
                     if (pedido.statusAtual != "Aberto") {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text("Só é possível Cancelar pedidos em aberto. Cumunique a cozinha"),
+                          content: Text("Só é possível Cancelar pedidos em aberto. Comunique a cozinha"),
                           backgroundColor: Colors.red,
                         ),
                       );
                       return;
                     }
 
+                    final TextEditingController senhaGerenteController = TextEditingController();
+                    bool obscureSenha = true; // VARIÁVEL LOCAL para o dialog
+
                     final confirmar = await showDialog<bool>(
                       context: context,
-                      builder: (_) => AlertDialog(
-                        title: Text("Cancelar Pedido"),
-                        content: Text(
-                            "Tem certeza que deseja Cancelar este pedido da mesa ${pedido.mesa.numero}?"),
-                        actions: [
-                          TextButton(
-                            child: Text("sair"),
-                            onPressed: () => Navigator.pop(context, false),
+                      builder: (_) => StatefulBuilder(
+                        builder: (context, setStateDialog) => AlertDialog(
+                          backgroundColor: Cores.cardBlack,
+                          title: Text(
+                            "Cancelar Pedido",
+                            style: TextStyle(color: Cores.textWhite),
                           ),
-                          ElevatedButton(
-                            child: Text("Cancelar Pedido"),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                            onPressed: () => Navigator.pop(context, true),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Tem certeza que deseja cancelar este pedido da mesa ${pedido.mesa.numero}?",
+                                style: TextStyle(fontSize: 14, color: Cores.textGray),
+                              ),
+                              SizedBox(height: 16),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[850],
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.red.withOpacity(0.3), width: 1),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.red.withOpacity(0.1),
+                                      blurRadius: 5,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: TextFormField(
+                                  controller: senhaGerenteController,
+                                  obscureText: obscureSenha, // USA A VARIÁVEL LOCAL
+                                  style: TextStyle(color: Colors.white),
+                                  decoration: InputDecoration(
+                                    labelText: "Senha do Gerente",
+                                    labelStyle: TextStyle(color: Colors.white70),
+                                    prefixIcon: Icon(Icons.password, color: Colors.red),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        obscureSenha ? Icons.visibility : Icons.visibility_off,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () {
+                                        setStateDialog(() {
+                                          obscureSenha = !obscureSenha;
+                                        });
+                                      },
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                    floatingLabelStyle: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                          actions: [
+                            TextButton(
+                              child: Text("Voltar", style: TextStyle(color: Cores.textGray)),
+                              onPressed: () {
+                                senhaGerenteController.dispose();
+                                Navigator.pop(context, false);
+                              },
+                            ),
+                            ElevatedButton(
+                              child: Text("Confirmar Cancelamento"),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                              onPressed: () => Navigator.pop(context, true),
+                            ),
+                          ],
+                        ),
                       ),
                     );
 
-                    if (confirmar == true) {
-                      final sucesso = await _pedidoController.excluirPedido(pedido);
-                      if (sucesso) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("Pedido excluído com sucesso."),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        setState(() {}); // força atualizar a lista
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("Erro ao excluir pedido."),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
+                    if (confirmar != true) {
+                      senhaGerenteController.dispose();
+                      return;
+                    }
+
+                    final res = await _pedidoController.confirmarSenhaCancelar(
+                      pedido,
+                      senhaGerenteController.text,
+                    );
+                    senhaGerenteController.dispose();
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(res),
+                        backgroundColor: res.contains("Pedido Cancelado") ? Colors.green : Colors.red,
+                      ),
+                    );
+
+                    if (res.contains("Pedido Cancelado")) {
+                      setState(() {});
                     }
                   },
                 ),

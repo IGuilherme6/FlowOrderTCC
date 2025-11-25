@@ -321,7 +321,7 @@ class _TelaPedidosState extends State<TelaPedidos> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(res),
-                    backgroundColor: Colors.red,
+                    backgroundColor: res.contains("Pedido Cancelado") ? Colors.green : Colors.red,
                   ),
                 );
                 return;
